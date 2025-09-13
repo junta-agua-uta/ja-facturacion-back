@@ -46,8 +46,17 @@ export class ClientesController {
   @ApiOperation({ summary: 'Descargar reporte de clientes en Excel' })
   @Get('/reporte')
   async descargarReporteClientes(@Res() response: Response) {
-    const clientes = await this.obtenerTodosClientes.obtenerTodos()
-    await this.generarExcelClientes.generarReporteClientes(response, clientes)
+    try {
+      const clientes = await this.obtenerTodosClientes.obtenerTodos()
+      return this.generarExcelClientes.generarReporteClientes(
+        response,
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+        clientes,
+      )
+    } catch (error) {
+      Logger.error('Error al generar reporte de clientes:', error.message)
+      throw new Error('Error al generar reporte de clientes: ' + error.message)
+    }
   }
 
   @Get('buscar')
