@@ -27,8 +27,8 @@ export class GenerarExelService {
       worksheet.addRow([
         'Factura',
         guiaRemision,
-        this.formatearFecha(f.FECHA_AUTORIZACION as string),
-        this.formatearFecha(f.FECHA_EMISION as string),
+        DateUtil.formatDate(f.FECHA_AUTORIZACION as string),
+        DateUtil.formatDate(f.FECHA_EMISION as string),
         f.VALOR_SIN_IMPUESTO,
         f.IVA,
         f.TOTAL,
@@ -48,14 +48,5 @@ export class GenerarExelService {
     // Escribir y enviar archivo
     await workbook.xlsx.write(response)
     response.end()
-  }
-
-  private formatearFecha(fecha: Date | string | null | undefined): string {
-    if (!fecha) return ''
-    const d = DateUtil.getLocalDate(new Date(fecha))
-    if (isNaN(d.getTime())) return ''
-    return `${d.getDate().toString().padStart(2, '0')}/${(d.getMonth() + 1)
-      .toString()
-      .padStart(2, '0')}/${d.getFullYear()}`
   }
 }
