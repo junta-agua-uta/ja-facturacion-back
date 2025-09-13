@@ -6,6 +6,7 @@ generator client {
 datasource db {
   provider = "mysql"
   url      = env("DATABASE_URL")
+  shadowDatabaseUrl = env("SHADOW_DATABASE_URL") // <-- agrega esto
 }
 
 enum ROL {
@@ -169,3 +170,12 @@ model DETALLES_FACTURA {
   factura FACTURAS @relation(fields: [ID_FACTURA], references: [ID])
   razon   RAZONES  @relation(fields: [ID_RAZON], references: [ID])
 }
+
+model PRODUCTOS {
+  ID             Int       @id @default(autoincrement())
+  CODIGO         String    @unique
+  DESCRIPCION    String
+  ESTADO         Boolean   @default(true)
+  FECHA_CREACION DateTime? @default(now())
+}
+
