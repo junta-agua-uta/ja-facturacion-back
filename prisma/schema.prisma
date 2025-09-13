@@ -171,11 +171,15 @@ model DETALLES_FACTURA {
   razon   RAZONES  @relation(fields: [ID_RAZON], references: [ID])
 }
 
-model PRODUCTOS {
+model CONCEPTOS {
   ID             Int       @id @default(autoincrement())
-  CODIGO         String    @unique
-  DESCRIPCION    String
+  CODIGO         String    @unique            @db.VarChar(32)
+  COD_INTERNO    String?                       @db.VarChar(32)
+  DESCRIPCION    String                        @db.VarChar(255)
+  PRECIO_BASE    Decimal?                      @db.Decimal(10, 2)
+  REQUIERE_MES   Boolean   @default(false)
   ESTADO         Boolean   @default(true)
   FECHA_CREACION DateTime? @default(now())
 }
+
 

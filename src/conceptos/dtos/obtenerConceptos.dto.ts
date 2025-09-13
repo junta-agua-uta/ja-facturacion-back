@@ -1,7 +1,7 @@
 import { IsInt, IsOptional, Min, IsString } from 'class-validator'
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
 
-export class ObtenerProductosDto {
+export class ObtenerConceptosDto {
   @ApiProperty({
     description: 'Número de página para la paginación de resultados',
     example: 1,
@@ -28,8 +28,8 @@ export class ObtenerProductosDto {
 
   @ApiPropertyOptional({
     description:
-      'Texto de búsqueda opcional para filtrar por código o descripción del producto',
-    example: 'VERTI',
+      'Texto de búsqueda opcional para filtrar por código o descripción del concepto',
+    example: 'EXCE',
     required: false,
   })
   @IsOptional()
