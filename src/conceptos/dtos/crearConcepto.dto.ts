@@ -21,7 +21,7 @@ export class CrearConceptoDto {
   @IsNotEmpty()
   @MinLength(3, { message: 'El código debe tener al menos 3 caracteres' })
   @MaxLength(32, { message: 'El código no debe superar 32 caracteres' })
-  @Matches(/^[A-Z0-9-_]+$/, {
+  @Matches(/^[A-Z0-9_ -]+$/, {
     message:
       'El código solo puede contener letras mayúsculas, números, guion y guion bajo',
   })
