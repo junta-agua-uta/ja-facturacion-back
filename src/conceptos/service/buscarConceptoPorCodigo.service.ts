@@ -1,4 +1,3 @@
-
 import { Injectable } from '@nestjs/common'
 import { PrismaClient } from '@prisma/client'
 
@@ -7,12 +6,16 @@ export class BuscarConceptoPorCodigoService {
   constructor(private readonly prisma: PrismaClient) {}
 
   async buscarPorCodigo(codigo: string) {
+    const q = (codigo ?? '').trim().toUpperCase()
+    if (!q) {
+      return []
+    }
+
     const conceptos = await this.prisma.cONCEPTOS.findMany({
       where: {
-        CODIGO: {
-          equals: codigo.trim().toUpperCase(),
-        },
+        OR: [{ CODIGO: { equals: q } }, { COD_INTERNO: { equals: q } }],
       },
+      orderBy: { FECHA_CREACION: 'desc' },
     })
 
     return conceptos.map((row) => ({

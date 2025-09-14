@@ -6,11 +6,16 @@ export class BuscarConceptoPorDescripcionService {
   constructor(private readonly prisma: PrismaClient) {}
 
   async buscarPorDescripcion(descripcion: string) {
-    const q = descripcion.trim()
+    const q = (descripcion ?? '').trim()
+    if (!q) {
+      return []
+    }
 
     const conceptos = await this.prisma.cONCEPTOS.findMany({
       where: {
-        DESCRIPCION: {},
+        DESCRIPCION: {
+          contains: q,
+        },
       },
       orderBy: { FECHA_CREACION: 'desc' },
     })
