@@ -19,4 +19,13 @@ export class DateUtil {
   static getLocalDateEndOfDay(date: Date): Date {
     return new Date(date.getTime() + (24 - date.getHours()) * 60 * 60 * 1000)
   }
+
+  static formatDate(fecha: Date | string | null | undefined): string {
+    if (!fecha) return ''
+    const d = DateUtil.getLocalDate(new Date(fecha))
+    if (isNaN(d.getTime())) return ''
+    return `${d.getDate().toString().padStart(2, '0')}/${(d.getMonth() + 1)
+      .toString()
+      .padStart(2, '0')}/${d.getFullYear()}`
+  }
 }
