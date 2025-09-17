@@ -6,6 +6,7 @@ import { EmailModule } from './email/email.module'
 import { ElectronicInvoiceService } from './services/electronic-invoice.service'
 import { GenerateLiquidacionCompraService } from './services/generate-liquidacion-compra.service'
 import { LiquidacionCompraController } from './controllers/liquidacion-compra.controller'
+import { ElectronicLiquidacionService } from './services/electronic-liquidacion.service'
 
 @Module({
   controllers: [LiquidacionCompraController],
@@ -15,8 +16,9 @@ import { LiquidacionCompraController } from './controllers/liquidacion-compra.co
     SignInvoiceService,
     ElectronicInvoiceService,
     GenerateLiquidacionCompraService,
+    ElectronicLiquidacionService,
   ],
   imports: [EmailModule],
-  exports: [GenerateInvoiceService, ElectronicInvoiceService, GenerateLiquidacionCompraService],
+  exports: [GenerateInvoiceService, ElectronicInvoiceService, GenerateLiquidacionCompraService, ElectronicLiquidacionService],
 })
 export class FacturacionModule {}
