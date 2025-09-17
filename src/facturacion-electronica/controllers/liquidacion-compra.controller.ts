@@ -2,12 +2,14 @@ import { Controller, Post, Body, Get, Logger } from '@nestjs/common'
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger'
 import { GenerateLiquidacionCompraService } from '../services/generate-liquidacion-compra.service'
 import { LiquidacionCompraInputDto } from '../dto/liquidacion-compra.dto'
+import { ElectronicLiquidacionService } from '../services/electronic-liquidacion.service'
 
 @ApiTags('Liquidación de Compra')
 @Controller('liquidacion-compra')
 export class LiquidacionCompraController {
   constructor(
     private readonly generateLiquidacionCompraService: GenerateLiquidacionCompraService,
+    private readonly electronicLiquidacionService: ElectronicLiquidacionService,
   ) {}
 
   @ApiOperation({
@@ -114,5 +116,33 @@ export class LiquidacionCompraController {
       Logger.error('Error al generar XML de ejemplo de liquidación de compra:', error.message)
       throw new Error('Error al generar XML de ejemplo de liquidación de compra: ' + error.message)
     }
+  }
+
+  @ApiOperation({
+    summary: 'Enviar liquidación de compra al SRI',
+    description: 'Genera, firma, envía a recepción y consulta autorización en el SRI',
+  })
+  @ApiResponse({ status: 200, description: 'Proceso en SRI completado' })
+  @Post('enviar-sri')
+  async enviarSri(@Body() data: LiquidacionCompraInputDto) {
+    try {
+      Logger.log('Enviando liquidación de compra al SRI...')
+      const result = await this.electronicLiquidacionService.enviarAlSRI(
+        data,
+        'proveedor@empresa.com',
+      )
+      return result
+    } catch (error) {
+      Logger.error('Error al enviar al SRI:', (error as Error).message)
+      throw new Error('Error al enviar al SRI: ' + (error as Error).message)
+    }
+  }
+
+  @ApiOperation({ summary: 'Consultar autorización por clave de acceso' })
+  @ApiResponse({ status: 200, description: 'Resultado de autorización' })
+  @Get('autorizar/:accessKey')
+  async autorizarPorClave() {
+    // Implementación futura si se desea usar por ruta con parámetro
+    return { message: 'No implementado. Use POST /enviar-sri para flujo completo.' }
   }
 }
