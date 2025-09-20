@@ -169,3 +169,45 @@ model DETALLES_FACTURA {
   factura FACTURAS @relation(fields: [ID_FACTURA], references: [ID])
   razon   RAZONES  @relation(fields: [ID_RAZON], references: [ID])
 }
+
+model LiquidacionCompra {
+  id                          Int      @id @default(autoincrement())
+  fechaEmision                String
+  dirEstablecimiento          String
+  tipoIdentificacionProveedor String
+  razonSocialProveedor        String
+  identificacionProveedor     String
+  totalSinImpuestos           Float
+  totalDescuento              Float
+  importeTotal                Float
+  moneda                      String
+
+  xml                         String?  
+  accessKey                   String?  
+  estadoSri                   String?  
+
+  createdAt                   DateTime @default(now())
+  updatedAt                   DateTime @updatedAt
+
+  detalles DetalleLiquidacion[]
+}
+
+model DetalleLiquidacion {
+  id                        Int      @id @default(autoincrement())
+  codigoPrincipal           String
+  codigoAuxiliar            String?   
+  descripcion               String
+  unidadMedida              String?   
+  cantidad                  Float
+  precioUnitario            Float
+  descuento                 Float
+  precioTotalSinImpuesto    Float
+  codigoImpuesto            String
+  codigoPorcentajeImpuesto  String
+  tarifaImpuesto            Float
+  baseImponible             Float
+  valorImpuesto             Float
+
+  liquidacionId             Int
+  liquidacion               LiquidacionCompra @relation(fields: [liquidacionId], references: [id])
+}

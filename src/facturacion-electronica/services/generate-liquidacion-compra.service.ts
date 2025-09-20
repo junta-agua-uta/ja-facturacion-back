@@ -1,95 +1,75 @@
-import { Injectable, Logger } from '@nestjs/common'
-import { create } from 'xmlbuilder2'
-import { generateAccessKey } from 'src/facturacion-electronica/utils/autorizacion-code.util'
-import {
-  LiquidacionCompraDto,
-  LiquidacionCompraInputDto,
-} from 'src/facturacion-electronica/dto/liquidacion-compra.dto'
-import { DateUtil } from 'src/common/utils/date.util'
+import { Injectable, Logger } from '@nestjs/common';
+import { create } from 'xmlbuilder2';
+import { LiquidacionCompraInputDto } from '../dto/liquidacion-compra.dto';
 
 @Injectable()
 export class GenerateLiquidacionCompraService {
-  generateLiquidacionCompraXml(liquidacion: LiquidacionCompraDto) {
-    const document = create({ version: '1.0', encoding: 'UTF-8' }, liquidacion)
-    const xml = document.end({ prettyPrint: true })
-    return xml
-  }
+  private readonly logger = new Logger(GenerateLiquidacionCompraService.name);
 
-  generateLiquidacionCompra(
-    data: LiquidacionCompraInputDto,
-    emailProveedor: string,
-  ) {
-    // Normalizar fecha dd/mm/yyyy
-    const [day, month, year] = data.infoLiquidacionCompra.fechaEmision
-      .split('/')
-      .map((part) => part.padStart(2, '0'))
+  // Datos de la empresa (emisor) quemados
+  private readonly empresa = {
+    razonSocial: 'MANOBANDA YUGCHA JOSE FRANCISCO',
+    nombreComercial: 'MI EMPRESA',
+    ruc: '1891809449001',
+    dirMatriz: 'Av. Principal 123, Quito',
+    estab: '001',
+    ptoEmi: '001',
+    contribuyenteEspecial: '123',
+    obligadoContabilidad: 'SI',
+  };
 
-    data.infoLiquidacionCompra.fechaEmision = `${day}/${month}/${year}`
+  generateLiquidacionCompraXml(data: LiquidacionCompraInputDto, emailProveedor: string): string {
+    const formatNumber = (num: number) => num.toFixed(2);
 
-    const formattedDateStr = `${year}-${month}-${day}`
-    const date = DateUtil.getLocalDate(new Date(formattedDateStr))
-    date.setMinutes(date.getMinutes() + date.getTimezoneOffset())
-
-    const accessKey = generateAccessKey({
-      date,
-      codDoc: data.infoTributaria.codDoc,
-      ruc: data.infoTributaria.ruc,
-      environment: data.infoTributaria.ambiente,
-      establishment: data.infoTributaria.estab,
-      emissionPoint: data.infoTributaria.ptoEmi,
-      sequential: data.infoTributaria.secuencial,
-    })
-    Logger.log(accessKey)
-
-    const {
-      ambiente,
-      tipoEmision,
-      razonSocial,
-      nombreComercial,
-      ruc,
-      codDoc,
-      estab,
-      ptoEmi,
-      secuencial,
-      dirMatriz,
-    } = data.infoTributaria
-
-    const infoTributaria = {
-      ambiente,
-      tipoEmision,
-      razonSocial,
-      nombreComercial,
-      ruc,
-      claveAcceso: accessKey,
-      codDoc,
-      estab,
-      ptoEmi,
-      secuencial,
-      dirMatriz,
-    }
-
-    const liquidacion: LiquidacionCompraDto = {
+    const liquidacion = {
       liquidacionCompra: {
         '@id': 'comprobante',
         '@version': '1.1.0',
-        infoTributaria,
-        infoLiquidacionCompra: data.infoLiquidacionCompra,
+        infoTributaria: {
+          ambiente: process.env.AMBIENTE || '1',
+          tipoEmision: '1',
+          razonSocial: this.empresa.razonSocial,
+          nombreComercial: this.empresa.nombreComercial,
+          ruc: this.empresa.ruc,
+          claveAcceso: '', // se reemplaza luego
+          codDoc: '03',
+          estab: this.empresa.estab,
+          ptoEmi: this.empresa.ptoEmi,
+          secuencial: '000000001',
+          dirMatriz: this.empresa.dirMatriz,
+        },
+        infoLiquidacionCompra: {
+          fechaEmision: data.infoLiquidacionCompra.fechaEmision,
+          dirEstablecimiento: data.infoLiquidacionCompra.dirEstablecimiento,
+          contribuyenteEspecial: this.empresa.contribuyenteEspecial,
+          obligadoContabilidad: this.empresa.obligadoContabilidad,
+          tipoIdentificacionProveedor: data.infoLiquidacionCompra.tipoIdentificacionProveedor,
+          razonSocialProveedor: data.infoLiquidacionCompra.razonSocialProveedor,
+          identificacionProveedor: data.infoLiquidacionCompra.identificacionProveedor,
+          direccionProveedor: data.infoLiquidacionCompra.direccionProveedor || '',
+          totalSinImpuestos: formatNumber(data.infoLiquidacionCompra.totalSinImpuestos),
+          totalDescuento: formatNumber(data.infoLiquidacionCompra.totalDescuento),
+          importeTotal: formatNumber(data.infoLiquidacionCompra.importeTotal),
+          moneda: data.infoLiquidacionCompra.moneda,
+        },
         detalles: {
-          detalle: data.detalles.map((d) => ({
+          detalle: data.detalles.map(d => ({
             codigoPrincipal: d.codigoPrincipal,
+            codigoAuxiliar: d.codigoAuxiliar || '',
             descripcion: d.descripcion,
-            cantidad: d.cantidad,
-            precioUnitario: d.precioUnitario,
-            descuento: d.descuento,
-            precioTotalSinImpuesto: d.precioTotalSinImpuesto,
+            unidadMedida: d.unidadMedida || '',
+            cantidad: formatNumber(d.cantidad),
+            precioUnitario: formatNumber(d.precioUnitario),
+            descuento: formatNumber(d.descuento),
+            precioTotalSinImpuesto: formatNumber(d.precioTotalSinImpuesto),
             impuestos: {
               impuesto: [
                 {
                   codigo: d.codigoImpuesto,
                   codigoPorcentaje: d.codigoPorcentajeImpuesto,
-                  tarifa: d.tarifaImpuesto,
-                  baseImponible: d.baseImponible,
-                  valor: d.valorImpuesto,
+                  tarifa: formatNumber(d.tarifaImpuesto),
+                  baseImponible: formatNumber(d.baseImponible),
+                  valor: formatNumber(d.valorImpuesto),
                 },
               ],
             },
@@ -97,61 +77,70 @@ export class GenerateLiquidacionCompraService {
         },
         infoAdicional: {
           campoAdicional: [
-            {
-              '@nombre': 'emailProveedor',
-              '#': emailProveedor,
-            },
+            { '@nombre': 'emailProveedor', '#': emailProveedor },
           ],
         },
       },
-    } as unknown as LiquidacionCompraDto
+    };
 
-    const xml = this.generateLiquidacionCompraXml(liquidacion)
-    return { xml, accessKey }
+    return create({ version: '1.0', encoding: 'UTF-8' }, liquidacion)
+      .end({ prettyPrint: true });
   }
 
-  createExampleLiquidacionCompra(): LiquidacionCompraInputDto {
-    return {
-      infoTributaria: {
-        ambiente: '1',
-        tipoEmision: '1',
-        razonSocial: 'MI EMPRESA S.A.',
-        nombreComercial: 'MI EMPRESA',
-        ruc: '1790012345001',
-        codDoc: '03',
-        estab: '001',
-        ptoEmi: '001',
-        secuencial: '000000123',
-        dirMatriz: 'Av. Siempre Viva 123',
-      },
-      infoLiquidacionCompra: {
-        fechaEmision: '13/09/2025',
-        dirEstablecimiento: 'Av. Siempre Viva 123',
-        tipoIdentificacionProveedor: '05',
-        razonSocialProveedor: 'Proveedor de Prueba',
-        identificacionProveedor: '0102030405',
-        totalSinImpuestos: 100,
-        totalDescuento: 0,
-        importeTotal: 112,
-        moneda: 'DOLAR',
-      },
-      detalles: [
-        {
-          codigoPrincipal: 'PROD001',
-          descripcion: 'Producto de ejemplo',
-          cantidad: 10,
-          precioUnitario: 10,
-          descuento: 0,
-          precioTotalSinImpuesto: 100,
-          codigoImpuesto: '2',
-          codigoPorcentajeImpuesto: '2',
-          tarifaImpuesto: 12,
-          baseImponible: 100,
-          valorImpuesto: 12,
-        },
-      ],
+  generateClaveAcceso(
+    fecha: string,
+    tipoComprobante: string,
+    ruc: string,
+    ambiente: string,
+    serie: string,
+    numeroComprobante: string,
+    tipoEmision: string
+  ): string {
+    const f = fecha.replace(/\//g, '');
+    const codigoNumerico = Math.floor(10000000 + Math.random() * 90000000).toString();
+
+    let clave = `${f}${tipoComprobante}${ruc.padStart(13, '0')}${ambiente}${serie}${numeroComprobante}${codigoNumerico}${tipoEmision}`;
+
+    const pesos = [2,3,4,5,6,7];
+    let suma = 0;
+    let j = 0;
+    for (let i = clave.length - 1; i >= 0; i--) {
+      suma += parseInt(clave[i], 10) * pesos[j];
+      j = (j + 1) % pesos.length;
     }
+    let digito = 11 - (suma % 11);
+    if (digito === 11) digito = 0;
+    if (digito === 10) digito = 1;
+
+    clave += digito.toString();
+    return clave;
+  }
+
+  generateLiquidacionCompra(data: LiquidacionCompraInputDto, emailProveedor: string) {
+    const xml = this.generateLiquidacionCompraXml(data, emailProveedor);
+
+    const fecha = data.infoLiquidacionCompra.fechaEmision;
+    const tipoComprobante = '03';
+    const ruc = this.empresa.ruc;
+    const ambiente = process.env.AMBIENTE || '1';
+    const serie = this.empresa.estab + this.empresa.ptoEmi;
+    const numeroComprobante = '000000001';
+    const tipoEmision = '1';
+
+    const accessKey = this.generateClaveAcceso(
+      fecha,
+      tipoComprobante,
+      ruc,
+      ambiente,
+      serie,
+      numeroComprobante,
+      tipoEmision
+    );
+
+    this.logger.log(`Clave de acceso generada: ${accessKey}`);
+
+    const xmlConClave = xml.replace('<claveAcceso></claveAcceso>', `<claveAcceso>${accessKey}</claveAcceso>`);
+
+    return { xml: xmlConClave, accessKey };
   }
 }
-
-

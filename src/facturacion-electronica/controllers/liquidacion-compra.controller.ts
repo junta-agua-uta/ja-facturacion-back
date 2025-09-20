@@ -1,148 +1,26 @@
-import { Controller, Post, Body, Get, Logger } from '@nestjs/common'
-import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger'
-import { GenerateLiquidacionCompraService } from '../services/generate-liquidacion-compra.service'
-import { LiquidacionCompraInputDto } from '../dto/liquidacion-compra.dto'
-import { ElectronicLiquidacionService } from '../services/electronic-liquidacion.service'
+import { Controller, Post, Body, Get, Param, Logger } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { LiquidacionCompraInputDto } from '../dto/liquidacion-compra.dto';
+import { ElectronicLiquidacionService } from '../services/electronic-liquidacion.service';
 
 @ApiTags('Liquidación de Compra')
 @Controller('liquidacion-compra')
 export class LiquidacionCompraController {
-  constructor(
-    private readonly generateLiquidacionCompraService: GenerateLiquidacionCompraService,
-    private readonly electronicLiquidacionService: ElectronicLiquidacionService,
-  ) {}
+  private readonly logger = new Logger(LiquidacionCompraController.name);
 
-  @ApiOperation({
-    summary: 'Generar XML de liquidación de compra',
-    description: 'Genera el XML para una liquidación de compra de bienes y prestación de servicios',
-  })
-  @ApiResponse({
-    status: 200,
-    description: 'XML de liquidación de compra generado exitosamente',
-    schema: {
-      type: 'object',
-      properties: {
-        xml: { type: 'string', description: 'XML de la liquidación de compra' },
-        accessKey: { type: 'string', description: 'Clave de acceso generada' },
-      },
-    },
-  })
-  @Post('generar-xml')
-  async generarXmlLiquidacionCompra(
-    @Body() liquidacionData: LiquidacionCompraInputDto,
-  ) {
-    try {
-      Logger.log('Generando XML de liquidación de compra...')
-      
-      const result = this.generateLiquidacionCompraService.generateLiquidacionCompra(
-        liquidacionData,
-        'proveedor@empresa.com', // Email del proveedor
-      )
+  constructor(private readonly service: ElectronicLiquidacionService) {}
 
-      Logger.log('XML de liquidación de compra generado exitosamente')
-      
-      return {
-        success: true,
-        message: 'XML de liquidación de compra generado exitosamente',
-        data: {
-          xml: result.xml,
-          accessKey: result.accessKey,
-        },
-      }
-    } catch (error) {
-      Logger.error('Error al generar XML de liquidación de compra:', error.message)
-      throw new Error('Error al generar XML de liquidación de compra: ' + error.message)
-    }
+  @Post('crear')
+  @ApiOperation({ summary: 'Crear y enviar liquidación de compra al SRI' })
+  @ApiResponse({ status: 200, description: 'Liquidación creada y enviada al SRI' })
+  async crearYEnviar(@Body() dto: LiquidacionCompraInputDto) {
+    this.logger.log('Recibiendo request para crear y enviar liquidación');
+    return this.service.enviarAlSRI(dto, 'proveedor@empresa.com');
   }
 
-  @ApiOperation({
-    summary: 'Obtener ejemplo de liquidación de compra',
-    description: 'Retorna un ejemplo de estructura para liquidación de compra',
-  })
-  @ApiResponse({
-    status: 200,
-    description: 'Ejemplo de liquidación de compra obtenido exitosamente',
-  })
-  @Get('ejemplo')
-  async obtenerEjemploLiquidacionCompra() {
-    try {
-      Logger.log('Generando ejemplo de liquidación de compra...')
-      
-      const ejemplo = this.generateLiquidacionCompraService.createExampleLiquidacionCompra()
-      
-      Logger.log('Ejemplo de liquidación de compra generado exitosamente')
-      
-      return {
-        success: true,
-        message: 'Ejemplo de liquidación de compra obtenido exitosamente',
-        data: ejemplo,
-      }
-    } catch (error) {
-      Logger.error('Error al generar ejemplo de liquidación de compra:', error.message)
-      throw new Error('Error al generar ejemplo de liquidación de compra: ' + error.message)
-    }
-  }
-
-  @ApiOperation({
-    summary: 'Generar XML de ejemplo de liquidación de compra',
-    description: 'Genera el XML de un ejemplo de liquidación de compra',
-  })
-  @ApiResponse({
-    status: 200,
-    description: 'XML de ejemplo de liquidación de compra generado exitosamente',
-  })
-  @Get('ejemplo-xml')
-  async generarEjemploXmlLiquidacionCompra() {
-    try {
-      Logger.log('Generando XML de ejemplo de liquidación de compra...')
-      
-      const ejemplo = this.generateLiquidacionCompraService.createExampleLiquidacionCompra()
-      const result = this.generateLiquidacionCompraService.generateLiquidacionCompra(
-        ejemplo,
-        'proveedor@empresa.com',
-      )
-      
-      Logger.log('XML de ejemplo de liquidación de compra generado exitosamente')
-      
-      return {
-        success: true,
-        message: 'XML de ejemplo de liquidación de compra generado exitosamente',
-        data: {
-          xml: result.xml,
-          accessKey: result.accessKey,
-        },
-      }
-    } catch (error) {
-      Logger.error('Error al generar XML de ejemplo de liquidación de compra:', error.message)
-      throw new Error('Error al generar XML de ejemplo de liquidación de compra: ' + error.message)
-    }
-  }
-
-  @ApiOperation({
-    summary: 'Enviar liquidación de compra al SRI',
-    description: 'Genera, firma, envía a recepción y consulta autorización en el SRI',
-  })
-  @ApiResponse({ status: 200, description: 'Proceso en SRI completado' })
-  @Post('enviar-sri')
-  async enviarSri(@Body() data: LiquidacionCompraInputDto) {
-    try {
-      Logger.log('Enviando liquidación de compra al SRI...')
-      const result = await this.electronicLiquidacionService.enviarAlSRI(
-        data,
-        'proveedor@empresa.com',
-      )
-      return result
-    } catch (error) {
-      Logger.error('Error al enviar al SRI:', (error as Error).message)
-      throw new Error('Error al enviar al SRI: ' + (error as Error).message)
-    }
-  }
-
-  @ApiOperation({ summary: 'Consultar autorización por clave de acceso' })
-  @ApiResponse({ status: 200, description: 'Resultado de autorización' })
   @Get('autorizar/:accessKey')
-  async autorizarPorClave() {
-    // Implementación futura si se desea usar por ruta con parámetro
-    return { message: 'No implementado. Use POST /enviar-sri para flujo completo.' }
+  @ApiOperation({ summary: 'Consultar autorización del SRI por clave de acceso' })
+  async autorizarPorClave(@Param('accessKey') accessKey: string) {
+    return this.service.autorizarPorClave(accessKey);
   }
 }
