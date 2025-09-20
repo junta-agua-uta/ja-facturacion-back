@@ -6,6 +6,7 @@ import {
   Logger,
   Param,
   ParseIntPipe,
+  Patch,
   Post,
   Put,
   Query,
@@ -16,12 +17,12 @@ import { BuscarConceptoPorDescripcionService } from './service/buscarConceptoPor
 import { BuscarConceptoPorCodigoService } from './service/buscarConceptoPorCodigo.service'
 import { CrudConceptoService } from './service/crudConcepto.service'
 import { AuthGuard } from 'src/auth/guards/auth.guard'
-import { RoleGuard } from 'src/auth/guards/role.guard'
+// import { RoleGuard } from 'src/auth/guards/role.guard'
 import { CrearConceptoDto } from './dtos/crearConcepto.dto'
 import { EditarConceptoDto } from './dtos/editarConcepto.dto'
 
 @ApiTags('Conceptos')
-@UseGuards(AuthGuard)
+@UseGuards(AuthGuard) // o @UseGuards(AuthGuard, RoleGuard)
 @ApiBearerAuth('access-token')
 @Controller('conceptos')
 export class ConceptosController {
@@ -33,8 +34,7 @@ export class ConceptosController {
 
   @ApiOperation({
     summary: 'Buscar conceptos por descripción',
-    description:
-      'Busca conceptos por una parte de la descripción (case insensitive)',
+    description: 'Busca conceptos por coincidencia parcial en la descripción.',
   })
   @Get('buscar')
   async buscarPorDescripcion(@Query('descripcion') descripcion: string) {
@@ -54,7 +54,7 @@ export class ConceptosController {
   @ApiOperation({
     summary: 'Buscar concepto por código',
     description:
-      'Busca un concepto por código exacto (se normaliza a mayúsculas)',
+      'Busca conceptos por coincidencia parcial en código o código interno (el servicio normaliza a mayúsculas para la búsqueda).',
   })
   @Get('buscarCodigo')
   async buscarPorCodigo(@Query('codigo') codigo: string) {
@@ -71,15 +71,15 @@ export class ConceptosController {
 
   @ApiOperation({
     summary: 'Obtener conceptos',
-    description: 'Lista conceptos con paginación y búsqueda opcional',
+    description: 'Lista conceptos activos con paginación y búsqueda opcional.',
   })
   @ApiQuery({ name: 'page', required: false, type: Number })
   @ApiQuery({ name: 'limit', required: false, type: Number })
   @ApiQuery({ name: 'search', required: false, type: String })
   @Get()
   async obtenerConceptos(
-    @Query('page', new DefaultValuePipe('1'), ParseIntPipe) page: number,
-    @Query('limit', new DefaultValuePipe('10'), ParseIntPipe) limit: number,
+    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
+    @Query('limit', new DefaultValuePipe(10), ParseIntPipe) limit: number,
     @Query('search') search?: string,
   ) {
     try {
@@ -122,6 +122,20 @@ export class ConceptosController {
     } catch (error: any) {
       Logger.error('Error al editar concepto:', error.message)
       throw new Error('Error al editar concepto: ' + error.message)
+    }
+  }
+
+  @ApiOperation({
+    summary: 'Desactivar concepto',
+    description: 'Realiza un borrado lógico (ESTADO=false) del concepto',
+  })
+  @Patch(':id/desactivar')
+  async desactivarConcepto(@Param('id') id: string) {
+    try {
+      return await this.crudConceptoService.desactivarConcepto(id)
+    } catch (error: any) {
+      Logger.error('Error al desactivar concepto:', error.message)
+      throw new Error('Error al desactivar concepto: ' + error.message)
     }
   }
 }

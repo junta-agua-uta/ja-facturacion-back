@@ -5,7 +5,7 @@ import { IsString } from 'class-validator'
 
 export class EditarConceptoDto extends PartialType(CrearConceptoDto) {
   @ApiProperty({
-    description: 'ID del concepto a editar',
+    description: 'ID del concepto a editar (si lo envías en el body)',
     example: '1',
   })
   @IsString()

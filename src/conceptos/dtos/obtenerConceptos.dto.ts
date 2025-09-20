@@ -1,5 +1,6 @@
 import { IsInt, IsOptional, Min, IsString } from 'class-validator'
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
+import { Transform, Type } from 'class-transformer'
 
 export class ObtenerConceptosDto {
   @ApiProperty({
@@ -10,6 +11,7 @@ export class ObtenerConceptosDto {
     minimum: 1,
   })
   @IsOptional()
+  @Type(() => Number)
   @IsInt()
   @Min(1)
   page?: number
@@ -22,17 +24,19 @@ export class ObtenerConceptosDto {
     minimum: 1,
   })
   @IsOptional()
+  @Type(() => Number)
   @IsInt()
   @Min(1)
   limit?: number
 
   @ApiPropertyOptional({
     description:
-      'Texto de búsqueda opcional para filtrar por código o descripción del concepto',
+      'Texto de búsqueda opcional para filtrar por código, código interno o descripción',
     example: 'EXCE',
     required: false,
   })
   @IsOptional()
+  @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
   @IsString()
   search?: string
 }

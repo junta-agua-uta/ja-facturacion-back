@@ -6,14 +6,18 @@ export class BuscarConceptoPorCodigoService {
   constructor(private readonly prisma: PrismaClient) {}
 
   async buscarPorCodigo(codigo: string) {
-    const q = (codigo ?? '').trim().toUpperCase()
-    if (!q) {
-      return []
-    }
+    const q = (codigo ?? '').trim()
+    if (!q) return []
+
+    const qUpper = q.toUpperCase()
 
     const conceptos = await this.prisma.cONCEPTOS.findMany({
       where: {
-        OR: [{ CODIGO: { equals: q } }, { COD_INTERNO: { equals: q } }],
+        ESTADO: true,
+        OR: [
+          { CODIGO: { contains: qUpper } },
+          { COD_INTERNO: { contains: qUpper } },
+        ],
       },
       orderBy: { FECHA_CREACION: 'desc' },
     })

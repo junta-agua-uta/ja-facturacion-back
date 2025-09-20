@@ -4,15 +4,7 @@ import { DateUtil } from 'src/common/utils/date.util'
 import { ObtenerConceptosDto } from '../dtos/obtenerConceptos.dto'
 import { CrearConceptoDto } from '../dtos/crearConcepto.dto'
 import { EditarConceptoDto } from '../dtos/editarConcepto.dto'
-
-type Concepto = {
-  id: string
-  codigo: string
-  codInterno: string
-  desc: string
-  precioBase?: number
-  requiereMes?: boolean
-}
+import { Concepto } from '../models/concepto.model'
 
 @Injectable()
 export class CrudConceptoService {
@@ -38,15 +30,17 @@ export class CrudConceptoService {
     if (limit < 1) limit = 10
     const offset = (page - 1) * limit
 
-    const where =
-      search && search.trim() !== ''
-        ? {
-            OR: [
-              { CODIGO: { contains: search.trim().toUpperCase() } },
-              { DESCRIPCION: { contains: search.trim(), mode: 'insensitive' } },
-            ],
-          }
-        : undefined
+    const where: any = { ESTADO: true }
+
+    if (search && search.trim() !== '') {
+      const q = search.trim()
+      const qUpper = q.toUpperCase()
+      where.OR = [
+        { CODIGO: { contains: qUpper } },
+        { COD_INTERNO: { contains: qUpper } },
+        { DESCRIPCION: { contains: q } }, // sin mode
+      ]
+    }
 
     const [items, totalItems] = await Promise.all([
       this.prisma.cONCEPTOS.findMany({
@@ -60,7 +54,7 @@ export class CrudConceptoService {
 
     const totalPages = Math.ceil(totalItems / limit)
     return {
-      data: items.map(this.mapToFront),
+      data: items.map((row) => this.mapToFront(row)),
       totalItems,
       totalPages,
       currentPage: page,
@@ -80,7 +74,9 @@ export class CrudConceptoService {
     const creado = await this.prisma.cONCEPTOS.create({
       data: {
         CODIGO: codigo,
-        COD_INTERNO: data.codInterno?.trim(),
+        COD_INTERNO: data.codInterno
+          ? data.codInterno.trim().toUpperCase()
+          : undefined,
         DESCRIPCION: data.desc.trim(),
         PRECIO_BASE: data.precioBase ?? undefined,
         REQUIERE_MES: data.requiereMes ?? false,
@@ -116,7 +112,9 @@ export class CrudConceptoService {
       where: { ID: conceptoId },
       data: {
         CODIGO: data.codigo ? data.codigo.trim().toUpperCase() : undefined,
-        COD_INTERNO: data.codInterno?.trim(),
+        COD_INTERNO: data.codInterno
+          ? data.codInterno.trim().toUpperCase()
+          : undefined,
         DESCRIPCION: data.desc?.trim(),
         PRECIO_BASE: data.precioBase,
         REQUIERE_MES: data.requiereMes,
