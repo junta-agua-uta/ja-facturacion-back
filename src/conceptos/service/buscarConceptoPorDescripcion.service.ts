@@ -13,6 +13,7 @@ export class BuscarConceptoPorDescripcionService {
 
     const conceptos = await this.prisma.cONCEPTOS.findMany({
       where: {
+        ESTADO: true,
         DESCRIPCION: {
           contains: q,
         },
