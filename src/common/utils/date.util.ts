@@ -21,7 +21,7 @@ export class DateUtil {
   }
 
   static formatDate(fecha: Date | string | null | undefined): string {
-    if (!fecha) return ''
+    if (!fecha) return 'Sin fecha'
     const d = DateUtil.getLocalDate(new Date(fecha))
     if (isNaN(d.getTime())) return ''
     return `${d.getDate().toString().padStart(2, '0')}/${(d.getMonth() + 1)
