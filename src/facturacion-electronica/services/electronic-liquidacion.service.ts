@@ -178,4 +178,42 @@ export class ElectronicLiquidacionService {
       return { success: false, message: 'Error al consultar autorización: ' + msg };
     }
   }
+
+  async listarLiquidacionesPaginadas(page: number = 1, limit: number = 10) {
+  try {
+    const safePage = Math.max(1, page);
+    const safeLimit = Math.max(1, limit);
+    const skip = (safePage - 1) * safeLimit;
+
+    const [total, liquidaciones] = await Promise.all([
+      this.prisma.liquidacionCompra.count(),
+      this.prisma.liquidacionCompra.findMany({
+        skip,
+        take: safeLimit,
+        orderBy: { fechaEmision: 'desc' },
+        select: {
+          id: true,
+          fechaEmision: true,
+          razonSocialProveedor: true,
+          identificacionProveedor: true,
+          importeTotal: true,
+          estadoSri: true,
+        },
+      }),
+    ]);
+
+    return {
+      total,
+      page: safePage,
+      limit: safeLimit,
+      totalPages: Math.ceil(total / safeLimit),
+      data: liquidaciones,
+    };
+  } catch (error: unknown) {
+    const msg = error instanceof Error ? error.message : 'Error desconocido';
+    this.logger.error('Error al listar liquidaciones: ' + msg);
+    throw new Error('Error al listar liquidaciones: ' + msg);
+  }
+}
+
 }
