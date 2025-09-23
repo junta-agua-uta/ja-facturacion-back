@@ -7,6 +7,8 @@ import { SucursalesModule } from './sucursales/sucursales.module'
 import { FacturacionModule } from './facturacion-electronica/facturacion.module'
 import { MedidoresModule } from './medidores/medidores.module'
 import { RazonesModule } from './razones/razones.module'
+import { ConceptosModule } from './conceptos/conceptos.module'
+
 
 @Module({
   imports: [
@@ -18,6 +20,7 @@ import { RazonesModule } from './razones/razones.module'
     SucursalesModule,
     FacturacionModule,
     RazonesModule,
+    ConceptosModule,
   ],
 
   controllers: [],

@@ -4,8 +4,169 @@ generator client {
 }
 
 datasource db {
-  provider = "mysql"
-  url      = env("DATABASE_URL")
+  provider          = "mysql"
+  url               = env("DATABASE_URL")
+  shadowDatabaseUrl = env("SHADOW_DATABASE_URL")
+}
+
+model USUARIOS {
+  ID             Int        @id @default(autoincrement())
+  CEDULA         String     @unique
+  NOMBRE         String
+  APELLIDO       String
+  CORREO         String     @unique
+  HASH           String
+  SALT           String
+  ROL            ROL        @default(CONTADOR)
+  ESTADO         Boolean    @default(true)
+  FECHA_CREACION DateTime?  @default(now())
+  FACTURAS       FACTURAS[]
+}
+
+model CLIENTES {
+  ID               Int         @id @default(autoincrement())
+  IDENTIFICACION   String      @unique
+  RAZON_SOCIAL     String
+  NOMBRE_COMERCIAL String?
+  DIRECCION        String
+  TELEFONO1        String
+  TELEFONO2        String?
+  CORREO           String?     @default("tiolucasoswaldo1967@gmail.com")
+  TARIFA           String?
+  GRUPO            String?
+  ZONA             String?
+  RUTA             String?
+  VENDEDOR         String?
+  COBRADOR         String?
+  PROVINCIA        String?
+  CIUDAD           String?
+  PARROQUIA        String?
+  FECHA_CREACION   DateTime?   @default(now())
+  CUENTAS          CUENTAS[]
+  FACTURAS         FACTURAS[]
+  MEDIDORES        MEDIDORES[]
+}
+
+model CUENTAS {
+  ID            Int       @id @default(autoincrement())
+  FECHA_EMISION DateTime? @default(now())
+  VALOR         Float?
+  ESTADO        String?
+  ID_CLIENTE    Int
+  ABONOS        ABONOS[]
+  cliente       CLIENTES  @relation(fields: [ID_CLIENTE], references: [ID], onDelete: NoAction)
+
+  @@index([ID_CLIENTE], map: "CUENTAS_ID_CLIENTE_fkey")
+}
+
+model ABONOS {
+  ID          Int      @id @default(autoincrement())
+  VALOR_ABONO Float
+  FECHA_ABONO DateTime @default(now())
+  CODIGO      String
+  DESCRIPCION String
+  ID_CUENTA   Int
+  cuenta      CUENTAS  @relation(fields: [ID_CUENTA], references: [ID], onDelete: NoAction)
+
+  @@index([ID_CUENTA], map: "ABONOS_ID_CUENTA_fkey")
+}
+
+model MEDIDORES {
+  ID               Int                @id @default(autoincrement())
+  NUMERO_MEDIDOR   String             @unique
+  MODELO           String?
+  MARCA            String?
+  UBICACION        String?
+  FECHA_CREACION   DateTime?          @default(now())
+  ID_CLIENTE       Int
+  DETALLES_MEDIDOR DETALLES_MEDIDOR[]
+  FACTURAS         FACTURAS[]
+  cliente          CLIENTES           @relation(fields: [ID_CLIENTE], references: [ID], onDelete: NoAction)
+
+  @@index([ID_CLIENTE], map: "MEDIDORES_ID_CLIENTE_fkey")
+}
+
+model DETALLES_MEDIDOR {
+  ID            Int       @id @default(autoincrement())
+  ID_MEDIDOR    Int
+  FECHA_LECTURA DateTime  @default(now())
+  LECTURA       String
+  medidor       MEDIDORES @relation(fields: [ID_MEDIDOR], references: [ID], onDelete: NoAction)
+
+  @@index([ID_MEDIDOR], map: "DETALLES_MEDIDOR_ID_MEDIDOR_fkey")
+}
+
+model SUCURSALES {
+  ID            Int        @id @default(autoincrement())
+  NOMBRE        String?
+  UBICACION     String?
+  PUNTO_EMISION String?
+  FACTURAS      FACTURAS[]
+}
+
+model RAZONES {
+  ID               Int                @id @default(autoincrement())
+  CODIGO           String?
+  RAZON            String?
+  PRECIO1          Decimal?           @db.Decimal(10, 2)
+  PRECIO2          Decimal?           @db.Decimal(10, 2)
+  IVA              Decimal?           @db.Decimal(5, 2)
+  DETALLES_FACTURA DETALLES_FACTURA[]
+}
+
+model FACTURAS {
+  ID                 Int                @id @default(autoincrement())
+  SECUENCIA          Int
+  FECHA_EMISION      DateTime?          @default(now())
+  FECHA_AUTORIZACION DateTime?
+  ID_SUCURSAL        Int
+  ID_USUARIO         Int
+  ID_CLIENTE         Int
+  ID_MEDIDOR         Int
+  ESTADO_FACTURA     ESTADO_FACTURA?    @default(SIN_AUTORIZAR)
+  TIPO_PAGO          TIPO_PAGO
+  VALOR_SIN_IMPUESTO Float
+  IVA                Float
+  TOTAL              Float
+  FECHA_VENCIMIENTO  DateTime?          @default(now())
+  CLAVE_ACCESO       String?
+  DETALLES_FACTURA   DETALLES_FACTURA[]
+  cliente            CLIENTES           @relation(fields: [ID_CLIENTE], references: [ID], onDelete: NoAction)
+  medidor            MEDIDORES          @relation(fields: [ID_MEDIDOR], references: [ID], onDelete: NoAction)
+  sucursal           SUCURSALES         @relation(fields: [ID_SUCURSAL], references: [ID], onDelete: NoAction)
+  usuario            USUARIOS           @relation(fields: [ID_USUARIO], references: [ID], onDelete: NoAction)
+
+  @@index([ID_CLIENTE], map: "FACTURAS_ID_CLIENTE_fkey")
+  @@index([ID_MEDIDOR], map: "FACTURAS_ID_MEDIDOR_fkey")
+  @@index([ID_SUCURSAL], map: "FACTURAS_ID_SUCURSAL_fkey")
+  @@index([ID_USUARIO], map: "FACTURAS_ID_USUARIO_fkey")
+}
+
+model DETALLES_FACTURA {
+  ID          Int      @id @default(autoincrement())
+  ID_FACTURA  Int
+  ID_RAZON    Int
+  DESCRIPCION String?
+  SUBTOTAL    Float?
+  DESCUENTO   Float?   @default(0)
+  CANTIDAD    Int?     @default(1)
+  PRECIO_IVA  Float?
+  factura     FACTURAS @relation(fields: [ID_FACTURA], references: [ID], onDelete: NoAction)
+  razon       RAZONES  @relation(fields: [ID_RAZON], references: [ID], onDelete: NoAction)
+
+  @@index([ID_FACTURA], map: "DETALLES_FACTURA_ID_FACTURA_fkey")
+  @@index([ID_RAZON], map: "DETALLES_FACTURA_ID_RAZON_fkey")
+}
+
+model CONCEPTOS {
+  ID             Int       @id @default(autoincrement())
+  CODIGO         String    @unique(map: "CODIGO") @db.VarChar(32)
+  COD_INTERNO    String?   @db.VarChar(32)
+  DESCRIPCION    String    @db.VarChar(255)
+  PRECIO_BASE    Decimal?  @db.Decimal(10, 2)
+  REQUIERE_MES   Boolean   @default(false)
+  ESTADO         Boolean   @default(true)
+  FECHA_CREACION DateTime? @default(now()) @db.DateTime(0)
 }
 
 enum ROL {
@@ -25,147 +186,4 @@ enum TIPO_PAGO {
   CREDITO
   DEPOSITO
   CHEQUE
-}
-
-model USUARIOS {
-  ID             Int       @id @default(autoincrement())
-  CEDULA         String    @unique
-  NOMBRE         String
-  APELLIDO       String
-  CORREO         String    @unique
-  HASH           String
-  SALT           String
-  ROL            ROL       @default(CONTADOR)
-  ESTADO         Boolean   @default(true)
-  FECHA_CREACION DateTime? @default(now())
-
-  FACTURAS FACTURAS[]
-}
-
-model CLIENTES {
-  ID               Int       @id @default(autoincrement())
-  IDENTIFICACION   String    @unique
-  RAZON_SOCIAL     String
-  NOMBRE_COMERCIAL String?
-  DIRECCION        String
-  TELEFONO1        String
-  TELEFONO2        String?
-  CORREO           String?   @default("tiolucasoswaldo1967@gmail.com")
-  TARIFA           String?
-  GRUPO            String?
-  ZONA             String?
-  RUTA             String?
-  VENDEDOR         String?
-  COBRADOR         String?
-  PROVINCIA        String?
-  CIUDAD           String?
-  PARROQUIA        String?
-  FECHA_CREACION   DateTime? @default(now())
-
-  CUENTAS   CUENTAS[]
-  MEDIDORES MEDIDORES[]
-  FACTURAS  FACTURAS[]
-}
-
-model CUENTAS {
-  ID            Int       @id @default(autoincrement())
-  FECHA_EMISION DateTime? @default(now())
-  VALOR         Float?
-  ESTADO        String?
-  ID_CLIENTE    Int
-
-  cliente CLIENTES @relation(fields: [ID_CLIENTE], references: [ID])
-  ABONOS  ABONOS[]
-}
-
-model ABONOS {
-  ID          Int      @id @default(autoincrement())
-  VALOR_ABONO Float
-  FECHA_ABONO DateTime @default(now())
-  CODIGO      String
-  DESCRIPCION String
-  ID_CUENTA   Int
-
-  cuenta CUENTAS @relation(fields: [ID_CUENTA], references: [ID])
-}
-
-model MEDIDORES {
-  ID             Int       @id @default(autoincrement())
-  NUMERO_MEDIDOR String    @unique
-  MODELO         String?
-  MARCA          String?
-  UBICACION      String?
-  FECHA_CREACION DateTime? @default(now())
-  ID_CLIENTE     Int
-
-  cliente          CLIENTES           @relation(fields: [ID_CLIENTE], references: [ID])
-  DETALLES_MEDIDOR DETALLES_MEDIDOR[]
-  FACTURAS         FACTURAS[]
-}
-
-model DETALLES_MEDIDOR {
-  ID            Int      @id @default(autoincrement())
-  ID_MEDIDOR    Int
-  FECHA_LECTURA DateTime @default(now())
-  LECTURA       String
-
-  medidor MEDIDORES @relation(fields: [ID_MEDIDOR], references: [ID])
-}
-
-model SUCURSALES {
-  ID            Int     @id @default(autoincrement())
-  NOMBRE        String?
-  UBICACION     String?
-  PUNTO_EMISION String?
-
-  FACTURAS FACTURAS[]
-}
-
-model RAZONES {
-  ID      Int      @id @default(autoincrement())
-  CODIGO  String?
-  RAZON   String?
-  PRECIO1 Decimal? @db.Decimal(10, 2)
-  PRECIO2 Decimal? @db.Decimal(10, 2)
-  IVA     Decimal? @db.Decimal(5, 2)
-
-  DETALLES_FACTURA DETALLES_FACTURA[]
-}
-
-model FACTURAS {
-  ID                 Int             @id @default(autoincrement())
-  SECUENCIA          Int
-  FECHA_EMISION      DateTime?       @default(now())
-  FECHA_AUTORIZACION DateTime?
-  ID_SUCURSAL        Int
-  ID_USUARIO         Int
-  ID_CLIENTE         Int
-  ID_MEDIDOR         Int
-  ESTADO_FACTURA     ESTADO_FACTURA? @default(SIN_AUTORIZAR)
-  TIPO_PAGO          TIPO_PAGO
-  VALOR_SIN_IMPUESTO Float
-  IVA                Float
-  TOTAL              Float
-  FECHA_VENCIMIENTO  DateTime?       @default(now())
-  CLAVE_ACCESO       String?
-
-  sucursal         SUCURSALES         @relation(fields: [ID_SUCURSAL], references: [ID])
-  usuario          USUARIOS           @relation(fields: [ID_USUARIO], references: [ID])
-  cliente          CLIENTES           @relation(fields: [ID_CLIENTE], references: [ID])
-  medidor          MEDIDORES          @relation(fields: [ID_MEDIDOR], references: [ID])
-  DETALLES_FACTURA DETALLES_FACTURA[]
-}
-
-model DETALLES_FACTURA {
-  ID          Int     @id @default(autoincrement())
-  ID_FACTURA  Int
-  ID_RAZON    Int
-  DESCRIPCION String?
-  SUBTOTAL    Float?
-  DESCUENTO   Float?  @default(0)
-  CANTIDAD    Int?    @default(1)
-  PRECIO_IVA  Float?
-
-  factura FACTURAS @relation(fields: [ID_FACTURA], references: [ID])
-  razon   RAZONES  @relation(fields: [ID_RAZON], references: [ID])
 }
