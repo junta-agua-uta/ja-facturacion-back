@@ -6,19 +6,26 @@ import { LiquidacionCompraInputDto } from '../dto/liquidacion-compra.dto';
 export class GenerateLiquidacionCompraService {
   private readonly logger = new Logger(GenerateLiquidacionCompraService.name);
 
-  // Datos de la empresa (emisor) quemados
+  // Datos del emisor (quemados para el ejemplo)
   private readonly empresa = {
     razonSocial: 'MANOBANDA YUGCHA JOSE FRANCISCO',
-    nombreComercial: 'MI EMPRESA',
+    nombreComercial: 'Junta Administradora de Agua Potable Miñarica Santa Rosa',
     ruc: '1891809449001',
-    dirMatriz: 'Av. Principal 123, Quito',
+    dirMatriz: 'Santa Rosa',
     estab: '001',
-    ptoEmi: '001',
+    ptoEmi: '300',
     contribuyenteEspecial: '123',
     obligadoContabilidad: 'SI',
   };
 
-  generateLiquidacionCompraXml(data: LiquidacionCompraInputDto, emailProveedor: string): string {
+  /**
+   * Genera el XML de la liquidación de compra
+   */
+  generateLiquidacionCompraXml(
+    data: LiquidacionCompraInputDto,
+    emailProveedor: string,
+    accessKey: string,
+  ): string {
     const formatNumber = (num: number) => num.toFixed(2);
 
     const liquidacion = {
@@ -31,7 +38,7 @@ export class GenerateLiquidacionCompraService {
           razonSocial: this.empresa.razonSocial,
           nombreComercial: this.empresa.nombreComercial,
           ruc: this.empresa.ruc,
-          claveAcceso: '', // se reemplaza luego
+          claveAcceso: accessKey, 
           codDoc: '03',
           estab: this.empresa.estab,
           ptoEmi: this.empresa.ptoEmi,
@@ -43,17 +50,35 @@ export class GenerateLiquidacionCompraService {
           dirEstablecimiento: data.infoLiquidacionCompra.dirEstablecimiento,
           contribuyenteEspecial: this.empresa.contribuyenteEspecial,
           obligadoContabilidad: this.empresa.obligadoContabilidad,
-          tipoIdentificacionProveedor: data.infoLiquidacionCompra.tipoIdentificacionProveedor,
-          razonSocialProveedor: data.infoLiquidacionCompra.razonSocialProveedor,
-          identificacionProveedor: data.infoLiquidacionCompra.identificacionProveedor,
+          tipoIdentificacionProveedor:
+            data.infoLiquidacionCompra.tipoIdentificacionProveedor,
+          razonSocialProveedor:
+            data.infoLiquidacionCompra.razonSocialProveedor,
+          identificacionProveedor:
+            data.infoLiquidacionCompra.identificacionProveedor,
           direccionProveedor: data.infoLiquidacionCompra.direccionProveedor || '',
-          totalSinImpuestos: formatNumber(data.infoLiquidacionCompra.totalSinImpuestos),
-          totalDescuento: formatNumber(data.infoLiquidacionCompra.totalDescuento),
+          totalSinImpuestos: formatNumber(
+            data.infoLiquidacionCompra.totalSinImpuestos,
+          ),
+          totalDescuento: formatNumber(
+            data.infoLiquidacionCompra.totalDescuento,
+          ),
+
+
+          totalConImpuestos: {
+            totalImpuesto: data.detalles.map((d) => ({
+              codigo: d.codigoImpuesto,
+              codigoPorcentaje: d.codigoPorcentajeImpuesto,
+              baseImponible: formatNumber(d.baseImponible),
+              valor: formatNumber(d.valorImpuesto),
+            })),
+          },
+
           importeTotal: formatNumber(data.infoLiquidacionCompra.importeTotal),
           moneda: data.infoLiquidacionCompra.moneda,
         },
         detalles: {
-          detalle: data.detalles.map(d => ({
+          detalle: data.detalles.map((d) => ({
             codigoPrincipal: d.codigoPrincipal,
             codigoAuxiliar: d.codigoAuxiliar || '',
             descripcion: d.descripcion,
@@ -76,17 +101,19 @@ export class GenerateLiquidacionCompraService {
           })),
         },
         infoAdicional: {
-          campoAdicional: [
-            { '@nombre': 'emailProveedor', '#': emailProveedor },
-          ],
+          campoAdicional: [{ '@nombre': 'emailProveedor', '#': emailProveedor }],
         },
       },
     };
 
-    return create({ version: '1.0', encoding: 'UTF-8' }, liquidacion)
-      .end({ prettyPrint: true });
+    return create({ version: '1.0', encoding: 'UTF-8' }, liquidacion).end({
+      prettyPrint: true,
+    });
   }
 
+  /**
+   * Genera la clave de acceso de 49 dígitos según normativa SRI
+   */
   generateClaveAcceso(
     fecha: string,
     tipoComprobante: string,
@@ -94,14 +121,20 @@ export class GenerateLiquidacionCompraService {
     ambiente: string,
     serie: string,
     numeroComprobante: string,
-    tipoEmision: string
+    tipoEmision: string,
   ): string {
-    const f = fecha.replace(/\//g, '');
-    const codigoNumerico = Math.floor(10000000 + Math.random() * 90000000).toString();
+    const f = fecha.replace(/\//g, ''); 
+    const codigoNumerico = Math.floor(
+      10000000 + Math.random() * 90000000,
+    ).toString();
 
-    let clave = `${f}${tipoComprobante}${ruc.padStart(13, '0')}${ambiente}${serie}${numeroComprobante}${codigoNumerico}${tipoEmision}`;
+    let clave = `${f}${tipoComprobante}${ruc.padStart(
+      13,
+      '0',
+    )}${ambiente}${serie}${numeroComprobante}${codigoNumerico}${tipoEmision}`;
 
-    const pesos = [2,3,4,5,6,7];
+    // cálculo del dígito verificador módulo 11
+    const pesos = [2, 3, 4, 5, 6, 7];
     let suma = 0;
     let j = 0;
     for (let i = clave.length - 1; i >= 0; i--) {
@@ -116,9 +149,13 @@ export class GenerateLiquidacionCompraService {
     return clave;
   }
 
-  generateLiquidacionCompra(data: LiquidacionCompraInputDto, emailProveedor: string) {
-    const xml = this.generateLiquidacionCompraXml(data, emailProveedor);
-
+  /**
+   * Genera la liquidación de compra con claveAcceso y XML listo
+   */
+  generateLiquidacionCompra(
+    data: LiquidacionCompraInputDto,
+    emailProveedor: string,
+  ) {
     const fecha = data.infoLiquidacionCompra.fechaEmision;
     const tipoComprobante = '03';
     const ruc = this.empresa.ruc;
@@ -134,13 +171,17 @@ export class GenerateLiquidacionCompraService {
       ambiente,
       serie,
       numeroComprobante,
-      tipoEmision
+      tipoEmision,
     );
 
     this.logger.log(`Clave de acceso generada: ${accessKey}`);
 
-    const xmlConClave = xml.replace('<claveAcceso></claveAcceso>', `<claveAcceso>${accessKey}</claveAcceso>`);
+    const xml = this.generateLiquidacionCompraXml(
+      data,
+      emailProveedor,
+      accessKey,
+    );
 
-    return { xml: xmlConClave, accessKey };
+    return { xml, accessKey };
   }
 }
