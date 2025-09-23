@@ -9,6 +9,7 @@ import {
   Post,
   Put,
   Query,
+  Res,
   UseGuards,
 } from '@nestjs/common'
 import { BuscarClientePorNombreService } from './services/buscarClientePorNombre.service'
@@ -20,6 +21,9 @@ import { AuthGuard } from 'src/auth/guards/auth.guard'
 import { RoleGuard } from 'src/auth/guards/role.guard'
 // import { Rol } from 'src/common/decorators/role.decorator'
 import { ApiBearerAuth, ApiTags, ApiOperation, ApiQuery } from '@nestjs/swagger'
+import { Response } from 'express'
+import { GenerarExcelClientesService } from './services/generar-excel-clientes.service'
+import { ObtenerTodosClientesService } from './services/obtenerTodosClientes.service'
 
 @ApiTags('Clientes')
 /* @Rol('ADMIN') */
@@ -31,12 +35,30 @@ export class ClientesController {
     private readonly clienteService: BuscarClientePorNombreService,
     private readonly buscarClientePorCedulaService: BuscarClientePorCedulaService,
     private readonly crudClienteService: CrudClienteService,
+    private readonly generarExcelClientes: GenerarExcelClientesService,
+    private readonly obtenerTodosClientes: ObtenerTodosClientesService,
   ) {}
 
   @ApiOperation({
     summary: 'Buscar cliente por nombre',
     description: 'Busca clientes por su razón social exacta (case insensitive)',
   })
+  @ApiOperation({ summary: 'Descargar reporte de clientes en Excel' })
+  @Get('/reporte')
+  async descargarReporteClientes(@Res() response: Response) {
+    try {
+      const clientes = await this.obtenerTodosClientes.obtenerTodos()
+      return this.generarExcelClientes.generarReporteClientes(
+        response,
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+        clientes,
+      )
+    } catch (error) {
+      Logger.error('Error al generar reporte de clientes:', error.message)
+      throw new Error('Error al generar reporte de clientes: ' + error.message)
+    }
+  }
+
   @Get('buscar')
   async buscarClientePorNombre(@Query('nombre') nombre: string) {
     try {
