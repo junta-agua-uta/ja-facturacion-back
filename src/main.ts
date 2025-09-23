@@ -62,5 +62,6 @@ async function bootstrap() {
   Logger.log('Server is running on https://juntaagua.onrender.com:${port}')
   Logger.log('Swagger is running on https://juntaagua.onrender.com/apiV2/docs')
   Logger.log('API is running on https://juntaagua.onrender.com/apiV2')
+  Logger.log(`Swagger is running on http://localhost:${port}`)
 }
 void bootstrap()
