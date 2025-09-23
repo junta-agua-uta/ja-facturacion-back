@@ -7,6 +7,7 @@ import { SucursalesModule } from './sucursales/sucursales.module'
 import { FacturacionModule } from './facturacion-electronica/facturacion.module'
 import { MedidoresModule } from './medidores/medidores.module'
 import { RazonesModule } from './razones/razones.module'
+import { LiquidacionComprasModule } from './liquidacion-compras/liquidacion-compras.module'
 import { ConceptosModule } from './conceptos/conceptos.module'
 
 
@@ -20,6 +21,7 @@ import { ConceptosModule } from './conceptos/conceptos.module'
     SucursalesModule,
     FacturacionModule,
     RazonesModule,
+    LiquidacionComprasModule,
     ConceptosModule,
   ],
 
