@@ -4,9 +4,8 @@ generator client {
 }
 
 datasource db {
-  provider          = "mysql"
-  url               = env("DATABASE_URL")
-  shadowDatabaseUrl = env("SHADOW_DATABASE_URL")
+  provider = "mysql"
+  url      = env("DATABASE_URL")
 }
 
 model USUARIOS {
@@ -115,26 +114,26 @@ model RAZONES {
 }
 
 model FACTURAS {
-  ID                 Int             @id @default(autoincrement())
+  ID                 Int                @id @default(autoincrement())
   SECUENCIA          Int
-  FECHA_EMISION      DateTime?       @default(now())
+  FECHA_EMISION      DateTime?          @default(now())
   FECHA_AUTORIZACION DateTime?
   ID_SUCURSAL        Int
   ID_USUARIO         Int
   ID_CLIENTE         Int
   ID_MEDIDOR         Int
-  ESTADO_FACTURA     ESTADO_FACTURA? @default(SIN_AUTORIZAR)
+  ESTADO_FACTURA     ESTADO_FACTURA?    @default(SIN_AUTORIZAR)
   TIPO_PAGO          TIPO_PAGO
   VALOR_SIN_IMPUESTO Float
   IVA                Float
   TOTAL              Float
-  FECHA_VENCIMIENTO  DateTime?       @default(now())
+  FECHA_VENCIMIENTO  DateTime?          @default(now())
   CLAVE_ACCESO       String?
   DETALLES_FACTURA   DETALLES_FACTURA[]
-  cliente            CLIENTES        @relation(fields: [ID_CLIENTE], references: [ID], onDelete: NoAction)
-  medidor            MEDIDORES       @relation(fields: [ID_MEDIDOR], references: [ID], onDelete: NoAction)
-  sucursal           SUCURSALES      @relation(fields: [ID_SUCURSAL], references: [ID], onDelete: NoAction)
-  usuario            USUARIOS        @relation(fields: [ID_USUARIO], references: [ID], onDelete: NoAction)
+  cliente            CLIENTES           @relation(fields: [ID_CLIENTE], references: [ID], onDelete: NoAction)
+  medidor            MEDIDORES          @relation(fields: [ID_MEDIDOR], references: [ID], onDelete: NoAction)
+  sucursal           SUCURSALES         @relation(fields: [ID_SUCURSAL], references: [ID], onDelete: NoAction)
+  usuario            USUARIOS           @relation(fields: [ID_USUARIO], references: [ID], onDelete: NoAction)
 
   @@index([ID_CLIENTE], map: "FACTURAS_ID_CLIENTE_fkey")
   @@index([ID_MEDIDOR], map: "FACTURAS_ID_MEDIDOR_fkey")
@@ -169,10 +168,8 @@ model CONCEPTOS {
   FECHA_CREACION DateTime? @default(now()) @db.DateTime(0)
 }
 
-/* === Compras (desde la rama alternativa) === */
-
 model LiquidacionCompra {
-  id                          Int      @id @default(autoincrement())
+  id                          Int                  @id @default(autoincrement())
   fechaEmision                String
   dirEstablecimiento          String
   tipoIdentificacionProveedor String
@@ -182,25 +179,20 @@ model LiquidacionCompra {
   totalDescuento              Float
   importeTotal                Float
   moneda                      String
-
-  xml                         String? @db.LongText
+  xml                         String?              @db.LongText
   accessKey                   String?
   estadoSri                   String?
-
-  createdAt                   DateTime @default(now())
-  updatedAt                   DateTime @updatedAt
-
+  createdAt                   DateTime             @default(now())
+  updatedAt                   DateTime             @updatedAt
   detalles                    DetalleLiquidacion[]
 }
 
 model DetalleLiquidacion {
-  id                       Int      @id @default(autoincrement())
+  id                       Int               @id @default(autoincrement())
   codigoPrincipal          String
-  codigoAuxiliar           String?
   descripcion              String
-  unidadMedida             String?
-  cantidad                 Float
   precioUnitario           Float
+  cantidad                 Float
   descuento                Float
   precioTotalSinImpuesto   Float
   codigoImpuesto           String
@@ -208,14 +200,11 @@ model DetalleLiquidacion {
   tarifaImpuesto           Float
   baseImponible            Float
   valorImpuesto            Float
-
   liquidacionId            Int
   liquidacion              LiquidacionCompra @relation(fields: [liquidacionId], references: [id], onDelete: NoAction)
 
   @@index([liquidacionId])
 }
-
-/* === Enums (definidos una sola vez) === */
 
 enum ROL {
   CONTADOR
