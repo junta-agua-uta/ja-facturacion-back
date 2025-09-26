@@ -3,8 +3,6 @@ import { AppModule } from './app.module'
 import { Logger, ValidationPipe } from '@nestjs/common'
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger'
 async function bootstrap() {
-  //  process.env.TZ = 'America/Guayaquil' // o 'America/Bogota' para UTC-5
-
   const app = await NestFactory.create(AppModule)
   app.setGlobalPrefix('apiV2')
   app.useGlobalPipes(new ValidationPipe())
@@ -13,7 +11,7 @@ async function bootstrap() {
   const config = new DocumentBuilder()
     .setTitle('JUNT AGUA API REST')
     .setDescription(
-      'API REST para la gestión de JUNT AGUA, un sistema de gestión de agua potable y saneamiento.',
+      'API REST para la gestión de JUNTA AGUA, un sistema de gestión de agua potable y saneamiento.',
     )
     .setVersion('1.0')
 

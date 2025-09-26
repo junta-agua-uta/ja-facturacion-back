@@ -183,7 +183,7 @@ model LiquidacionCompra {
   importeTotal                Float
   moneda                      String
 
-  xml                         String?
+  xml                         String? @db.LongText
   accessKey                   String?
   estadoSri                   String?
 
