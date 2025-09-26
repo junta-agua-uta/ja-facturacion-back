@@ -1,9 +1,13 @@
-FROM node:18-alpine AS deps
+FROM node:18-alpine
 WORKDIR /app
+
 COPY package*.json ./
 RUN npm ci
 
-FROM node:18-alpine AS build
-WORKDIR /app
-COPY --from=deps /app/node_modules ./node_modules
 COPY . .
+
+RUN npx prisma generate
+
+EXPOSE 3000
+
+CMD npx prisma migrate deploy && npm run start
