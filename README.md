@@ -1,92 +1,72 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="200" alt="Nest Logo" /></a>
-</p>
+# Sistema de Facturación Electrónica – NestJS
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+Este proyecto implementa un sistema de *facturación electrónica* con *NestJS, **Prisma ORM* y *MySQL*.  
+Incluye integración con el *SRI (Ecuador)* para el envío y autorización de comprobantes electrónicos.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://coveralls.io/github/nestjs/nest?branch=master" target="_blank"><img src="https://coveralls.io/repos/github/nestjs/nest/badge.svg?branch=master#9" alt="Coverage" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+---
 
-## Description
+## Requisitos previos
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+- [Node.js](https://nodejs.org/) v18+
+- [npm](https://www.npmjs.com/) (incluido con Node.js)
+- [MySQL](https://dev.mysql.com/downloads/mysql/)
+- [Git](https://git-scm.com/)
 
-## Installation
+---
 
-```bash
-$ npm install
-```
+## Instalación
 
-## Running the app
+1. Clona el repositorio e instala las dependencias:
 
-```bash
-# development
-$ npm run start
 
-# watch mode
-$ npm run start:dev
+npm i
 
-# production mode
-$ npm run start:prod
-```
 
-## Test
+2. Configura un archivo .env en la raíz del proyecto.  
+   Puedes guiarte del archivo .env.example que incluye todos los campos necesarios.  
+   *Nota:* Consultar las credenciales reales con el administrador.
 
-```bash
-# unit tests
-$ npm run test
+3. Generar la migración de Prisma en una base de datos vacía:
 
-# e2e tests
-$ npm run test:e2e
 
-# test coverage
-$ npm run test:cov
-```
-## Prisma Setup
+npx prisma generate
 
-Este proyecto utiliza [Prisma](https://www.prisma.io/) como ORM para manejar la base de datos. A continuación se detallan los pasos para configurar y usar Prisma correctamente.
 
-### Inicializar Prisma (si no se ha hecho)
+4. Crear una migración con un nombre descriptivo:
 
-```bash
-$ npx prisma init
-```
-Configurar la conexión a la base de datos
-Edita el archivo .env y reemplaza el valor de DATABASE_URL con la URL de tu base de datos:
-```bash
-DATABASE_URL="postgresql://usuario:contraseña@localhost:5432/mi_basedatos"
-```
-Generar cliente de Prisma
-Después de hacer cambios en el archivo schema.prisma, ejecuta:
-```bash
-$ npx prisma generate
-```
 
-## Support
+npx prisma migrate dev --name init
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
 
-## Stay in touch
+5. Generar el cliente Prisma actualizado:
 
-- Author - [Kamil Myśliwiec](https://kamilmysliwiec.com)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
 
-## License
+npx prisma generate
 
-Nest is [MIT licensed](LICENSE).
+
+6. Correr la aplicación en modo desarrollo:
+
+
+npm run start:dev
+
+
+---
+
+## Crear tablas o hacer cambios
+
+Para agregar nuevas tablas o modificar existentes:
+
+1. Editar el archivo prisma/schema.prisma y definir los modelos.
+2. Crear una nueva migración con un nombre descriptivo:
+
+
+npx prisma migrate dev --name nombre_migracion
+
+
+3. Regenerar el cliente Prisma:
+
+
+npx prisma generate
+
+
+4. Verifica que las tablas estén creadas correctamente en tu base de datos.
