@@ -1,23 +1,37 @@
-FROM node:18-alpine AS deps
+FROM node:20-alpine AS deps
 WORKDIR /app
+ENV NPM_CONFIG_UPDATE_NOTIFIER=false NPM_CONFIG_FUND=false
 COPY package*.json ./
-COPY prisma ./prisma
-RUN npm ci
-RUN npx prisma generate
+COPY prisma/schema.prisma ./prisma/
+RUN npm ci && npx prisma generate
 
-FROM node:18-alpine AS build
+FROM node:20-alpine AS build
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 RUN npm run build
 
-FROM node:18-alpine AS runner
+FROM node:20-alpine AS prod-deps
 WORKDIR /app
-RUN apk add --no-cache openssl
-ENV NODE_ENV=integration
-COPY --from=deps /app/node_modules ./node_modules
-COPY --from=build /app/dist ./dist
-COPY --from=build /app/prisma ./prisma
 COPY package*.json ./
+COPY prisma ./prisma
+RUN npm ci --omit=dev && npx prisma generate
+
+FROM node:20-alpine AS runner
+WORKDIR /app
+
+RUN addgroup -S nodegrp && adduser -S nodeusr -G nodegrp \
+ && apk add --no-cache openssl
+USER nodeusr
+
+COPY --chown=nodeusr:nodegrp --from=prod-deps /app/node_modules ./node_modules
+COPY --chown=nodeusr:nodegrp --from=build /app/dist ./dist
+COPY --chown=nodeusr:nodegrp prisma ./prisma
+COPY --chown=nodeusr:nodegrp package*.json ./
+
 EXPOSE 4000
-CMD sh -c "npx prisma migrate deploy && node dist/main.js"
+
+HEALTHCHECK --interval=20s --timeout=3s --retries=5 \
+  CMD node -e "fetch('http://localhost:4000/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+
+CMD ["sh", "-c", "npx prisma migrate deploy && node dist/main.js"]
