@@ -19,7 +19,6 @@ RUN npm ci --omit=dev
 
 FROM node:20-alpine AS runner
 WORKDIR /app
-ENV NODE_ENV=production
 
 RUN addgroup -S nodegrp && adduser -S nodeusr -G nodegrp \
  && apk add --no-cache openssl
