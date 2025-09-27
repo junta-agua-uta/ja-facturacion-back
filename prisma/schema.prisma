@@ -9,6 +9,7 @@ datasource db {
 }
 
 model USUARIOS {
+  @@map("usuarios")
   ID             Int        @id @default(autoincrement())
   CEDULA         String     @unique
   NOMBRE         String
@@ -23,6 +24,7 @@ model USUARIOS {
 }
 
 model CLIENTES {
+  @@map("clientes")
   ID               Int         @id @default(autoincrement())
   IDENTIFICACION   String      @unique
   RAZON_SOCIAL     String
@@ -47,6 +49,7 @@ model CLIENTES {
 }
 
 model CUENTAS {
+  @@map("cuentas")
   ID            Int       @id @default(autoincrement())
   FECHA_EMISION DateTime? @default(now())
   VALOR         Float?
@@ -59,6 +62,7 @@ model CUENTAS {
 }
 
 model ABONOS {
+  @@map("abonos")
   ID          Int      @id @default(autoincrement())
   VALOR_ABONO Float
   FECHA_ABONO DateTime @default(now())
@@ -71,6 +75,7 @@ model ABONOS {
 }
 
 model MEDIDORES {
+  @@map("medidores")
   ID               Int                @id @default(autoincrement())
   NUMERO_MEDIDOR   String             @unique
   MODELO           String?
@@ -86,6 +91,7 @@ model MEDIDORES {
 }
 
 model DETALLES_MEDIDOR {
+  @@map("detalles_medidor")
   ID            Int       @id @default(autoincrement())
   ID_MEDIDOR    Int
   FECHA_LECTURA DateTime  @default(now())
@@ -96,6 +102,7 @@ model DETALLES_MEDIDOR {
 }
 
 model SUCURSALES {
+  @@map("sucursales")
   ID            Int        @id @default(autoincrement())
   NOMBRE        String?
   UBICACION     String?
@@ -104,6 +111,7 @@ model SUCURSALES {
 }
 
 model RAZONES {
+  @@map("razones")
   ID               Int                @id @default(autoincrement())
   CODIGO           String?
   RAZON            String?
@@ -114,6 +122,7 @@ model RAZONES {
 }
 
 model FACTURAS {
+  @@map("facturas")
   ID                 Int                @id @default(autoincrement())
   SECUENCIA          Int
   FECHA_EMISION      DateTime?          @default(now())
@@ -142,6 +151,7 @@ model FACTURAS {
 }
 
 model DETALLES_FACTURA {
+  @@map("detalles_factura")
   ID          Int      @id @default(autoincrement())
   ID_FACTURA  Int
   ID_RAZON    Int
@@ -158,6 +168,7 @@ model DETALLES_FACTURA {
 }
 
 model CONCEPTOS {
+  @@map("conceptos")
   ID             Int       @id @default(autoincrement())
   CODIGO         String    @unique(map: "CODIGO") @db.VarChar(32)
   COD_INTERNO    String?   @db.VarChar(32)
@@ -169,6 +180,7 @@ model CONCEPTOS {
 }
 
 model LiquidacionCompra {
+  @@map("liquidacion_compra")
   id                          Int                  @id @default(autoincrement())
   fechaEmision                String
   dirEstablecimiento          String
@@ -188,6 +200,7 @@ model LiquidacionCompra {
 }
 
 model DetalleLiquidacion {
+  @@map("detalle_liquidacion")
   id                       Int               @id @default(autoincrement())
   codigoPrincipal          String
   descripcion              String

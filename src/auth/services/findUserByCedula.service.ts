@@ -16,7 +16,7 @@ export class FindUserService {
           },
         },
       })
-      .catch((error) => {
+      .catch(() => {
         return null
       })
 
