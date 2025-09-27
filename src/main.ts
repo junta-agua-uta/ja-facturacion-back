@@ -7,26 +7,8 @@ async function bootstrap() {
   app.setGlobalPrefix('apiV2')
   app.useGlobalPipes(new ValidationPipe())
 
-  const allowedOrigins = [
-    'http://localhost:3000',
-    'http://localhost:4000',
-    'https://*.code.run',
-    'https://*.northflank.app',
-    'https://*.onrender.com',
-  ].filter(Boolean)
-
   app.enableCors({
-    origin: (origin, cb) => {
-      if (!origin) return cb(null, true)
-      const ok = allowedOrigins.some((o) =>
-        o.includes('*')
-          ? new RegExp(
-              '^' + o.replace(/\./g, '\\.').replace(/\*/g, '.*') + '$',
-            ).test(origin as string)
-          : o === origin,
-      )
-      cb(ok ? null : new Error(`CORS blocked: ${origin}`), ok)
-    },
+    origin: ['https://*.code.run'],
     credentials: true,
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     allowedHeaders: 'Content-Type,Authorization',
