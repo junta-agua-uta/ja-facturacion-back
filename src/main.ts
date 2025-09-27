@@ -6,8 +6,33 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule)
   app.setGlobalPrefix('apiV2')
   app.useGlobalPipes(new ValidationPipe())
-  app.enableCors('*')
-  const port = process.env.PORT || 3000
+
+  const allowedOrigins = [
+    'http://localhost:3000',
+    'http://localhost:4000',
+    'https://*.code.run',
+    'https://*.northflank.app',
+    'https://*.onrender.com',
+  ].filter(Boolean)
+
+  app.enableCors({
+    origin: (origin, cb) => {
+      if (!origin) return cb(null, true)
+      const ok = allowedOrigins.some((o) =>
+        o.includes('*')
+          ? new RegExp(
+              '^' + o.replace(/\./g, '\\.').replace(/\*/g, '.*') + '$',
+            ).test(origin as string)
+          : o === origin,
+      )
+      cb(ok ? null : new Error(`CORS blocked: ${origin}`), ok)
+    },
+    credentials: true,
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+    allowedHeaders: 'Content-Type,Authorization',
+  })
+
+  const port = process.env.PORT || 4000
   const config = new DocumentBuilder()
     .setTitle('JUNT AGUA API REST')
     .setDescription(
