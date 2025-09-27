@@ -1,13 +1,13 @@
 # Sistema de Facturación Electrónica – NestJS
 
-Este proyecto implementa un sistema de *facturación electrónica* con *NestJS, **Prisma ORM* y *MySQL*.  
-Incluye integración con el *SRI (Ecuador)* para el envío y autorización de comprobantes electrónicos.
+Este proyecto implementa un sistema de **facturación electrónica** con **NestJS**, **Prisma ORM** y **MySQL**.  
+Incluye integración con el **SRI (Ecuador)** para el envío y autorización de comprobantes electrónicos.
 
 ---
 
 ## Requisitos previos
 
-- [Node.js](https://nodejs.org/) v18+
+- [Node.js](https://nodejs.org/) v18 o superior
 - [npm](https://www.npmjs.com/) (incluido con Node.js)
 - [MySQL](https://dev.mysql.com/downloads/mysql/)
 - [Git](https://git-scm.com/)
@@ -16,57 +16,65 @@ Incluye integración con el *SRI (Ecuador)* para el envío y autorización de co
 
 ## Instalación
 
-1. Clona el repositorio e instala las dependencias:
+1. **Clona el repositorio e instala las dependencias:**
+   ```bash
+   npm ci
+   ```
 
+2. **Configura un archivo `.env` en la raíz del proyecto.**  
+   Puedes guiarte en `.env.example`.  
+   *Nota:* consulta las credenciales reales con el administrador.
 
-npm i
+3. **Genera el cliente de Prisma:**
+   ```bash
+   npx prisma generate
+   ```
 
+4. **Si la base de datos ya está creada (integración o producción) aplica las migraciones pendientes:**
+   ```bash
+   npx prisma migrate deploy
+   ```
 
-2. Configura un archivo .env en la raíz del proyecto.  
-   Puedes guiarte del archivo .env.example que incluye todos los campos necesarios.  
-   *Nota:* Consultar las credenciales reales con el administrador.
-
-3. Generar la migración de Prisma en una base de datos vacía:
-
-
-npx prisma generate
-
-
-4. Crear una migración con un nombre descriptivo:
-
-
-npx prisma migrate dev --name init
-
-
-5. Generar el cliente Prisma actualizado:
-
-
-npx prisma generate
-
-
-6. Correr la aplicación en modo desarrollo:
-
-
-npm run start:dev
-
+5. **Corre la aplicación en modo desarrollo:**
+   ```bash
+   npm run start:dev
+   ```
 
 ---
 
 ## Crear tablas o hacer cambios
 
-Para agregar nuevas tablas o modificar existentes:
+Cuando necesites **nuevos modelos** o modificaciones en el esquema:
 
-1. Editar el archivo prisma/schema.prisma y definir los modelos.
-2. Crear una nueva migración con un nombre descriptivo:
+1. Edita `prisma/schema.prisma`.
+2. Crea una migración con un nombre descriptivo:
+   ```bash
+   npx prisma migrate dev --name nombre_migracion
+   ```
+3. Regenera el cliente Prisma:
+   ```bash
+   npx prisma generate
+   ```
+4. Sube los cambios (incluyendo la carpeta `prisma/migrations`) para que otros puedan simplemente ejecutar:
+   ```bash
+   npx prisma migrate deploy
+   ```
 
+---
 
-npx prisma migrate dev --name nombre_migracion
+## Resumen rápido
 
+- **Desarrollo local con base de datos vacía:**  
+  ```bash
+  npx prisma migrate dev --name init
+  ```
 
-3. Regenerar el cliente Prisma:
+- **Entorno de integración o producción con base de datos existente:**  
+  ```bash
+  npx prisma migrate deploy
+  ```
 
-
-npx prisma generate
-
-
-4. Verifica que las tablas estén creadas correctamente en tu base de datos.
+Con esto cualquier persona que clone el proyecto y apunte a una base de datos existente solo necesita ejecutar:
+```bash
+npm ci && npx prisma generate && npx prisma migrate deploy
+```
