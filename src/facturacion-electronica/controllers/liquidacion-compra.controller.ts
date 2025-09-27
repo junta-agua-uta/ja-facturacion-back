@@ -1,21 +1,51 @@
 import { Controller, Post, Body, Get, Param, Logger, DefaultValuePipe, ParseIntPipe, Query } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiQuery } from '@nestjs/swagger';
-import { LiquidacionCompraInputDto } from '../dto/liquidacion-compra.dto';
+import { LiquidacionCompraInputDto, LiquidacionCompraSimplificadaDto } from '../dto/liquidacion-compra.dto';
 import { ElectronicLiquidacionService } from '../services/electronic-liquidacion.service';
+import { LiquidacionCalculationService } from '../services/liquidacion-calculation.service';
 
 @ApiTags('Liquidación de Compra')
 @Controller('liquidacion-compra')
 export class LiquidacionCompraController {
   private readonly logger = new Logger(LiquidacionCompraController.name);
 
-  constructor(private readonly service: ElectronicLiquidacionService) {}
+  constructor(
+    private readonly service: ElectronicLiquidacionService,
+    private readonly calculationService: LiquidacionCalculationService
+  ) {}
 
   @Post('crear')
-  @ApiOperation({ summary: 'Crear y enviar liquidación de compra al SRI' })
+  @ApiOperation({ 
+    summary: 'Crear y enviar liquidación de compra al SRI',
+    description: 'Solo requiere en detalles: descripcion, cantidad, precioUnitario, descuento, valorImpuesto. Los demás campos se calculan automáticamente.'
+  })
   @ApiResponse({ status: 200, description: 'Liquidación creada y enviada al SRI' })
-  async crearYEnviar(@Body() dto: LiquidacionCompraInputDto) {
-    this.logger.log('Recibiendo request para crear y enviar liquidación');
-    return this.service.enviarAlSRI(dto, 'proveedor@empresa.com');
+  async crearYEnviar(@Body() dto: LiquidacionCompraSimplificadaDto) {
+    this.logger.log('Recibiendo request para crear y enviar liquidación simplificada');
+    
+    // Convertir detalles simplificados a detalles completos
+    const detallesCompletos = this.calculationService.convertirDetallesSimplificados(dto.detalles);
+    
+    // Calcular totales automáticamente
+    const totales = this.calculationService.calcularTotales(detallesCompletos);
+    
+    // Actualizar los totales en la información de liquidación
+    const infoActualizada = {
+      ...dto.infoLiquidacionCompra,
+      totalSinImpuestos: totales.totalSinImpuestos,
+      totalDescuento: totales.totalDescuento,
+      importeTotal: totales.importeTotal
+    };
+
+    // Crear DTO completo para el servicio
+    const liquidacionCompleta: LiquidacionCompraInputDto = {
+      infoLiquidacionCompra: infoActualizada,
+      detalles: detallesCompletos
+    };
+
+    this.logger.log(`Totales calculados: Sin impuestos: ${totales.totalSinImpuestos}, Impuestos: ${totales.totalImpuestos}, Total: ${totales.importeTotal}`);
+    
+    return this.service.enviarAlSRI(liquidacionCompleta, 'proveedor@empresa.com');
   }
 
   @Get('autorizar/:accessKey')
