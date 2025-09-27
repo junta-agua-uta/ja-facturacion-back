@@ -9,7 +9,7 @@ async function bootstrap() {
 
   app.enableCors({
     origin: [
-      'https://p01--dev-ja-facturacion-front--hcqk4hv77kmd.code.run',
+      'https://juntagua--dev-ja-facturacion-front--hcqk4hv77kmd.code.run',
       'http://localhost:5173',
     ],
     credentials: true,
