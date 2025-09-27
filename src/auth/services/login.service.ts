@@ -46,9 +46,11 @@ export class LoginService {
     ESTADO: boolean
     FECHA_CREACION: Date | null
   } | null> {
+    console.log(loginUserDto)
     const user = await this.findByCedulaService.findUserByCedula(
       loginUserDto.cedula,
     )
+    console.log(user)
     if (user && (await bcrypt.compare(loginUserDto.password, user.HASH))) {
       const { HASH, SALT, ...result } = user
 

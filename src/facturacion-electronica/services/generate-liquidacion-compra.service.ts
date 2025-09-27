@@ -1,10 +1,10 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { create } from 'xmlbuilder2';
-import { LiquidacionCompraInputDto } from '../dto/liquidacion-compra.dto';
+import { Injectable, Logger } from '@nestjs/common'
+import { create } from 'xmlbuilder2'
+import { LiquidacionCompraInputDto } from '../dto/liquidacion-compra.dto'
 
 @Injectable()
 export class GenerateLiquidacionCompraService {
-  private readonly logger = new Logger(GenerateLiquidacionCompraService.name);
+  private readonly logger = new Logger(GenerateLiquidacionCompraService.name)
 
   // Datos del emisor (quemados para el ejemplo)
   private readonly empresa = {
@@ -16,7 +16,7 @@ export class GenerateLiquidacionCompraService {
     ptoEmi: '300',
     contribuyenteEspecial: '123',
     obligadoContabilidad: 'SI',
-  };
+  }
 
   /**
    * Genera el XML de la liquidación de compra
@@ -26,7 +26,7 @@ export class GenerateLiquidacionCompraService {
     emailProveedor: string,
     accessKey: string,
   ): string {
-    const formatNumber = (num: number) => num.toFixed(2);
+    const formatNumber = (num: number) => num.toFixed(2)
 
     const liquidacion = {
       liquidacionCompra: {
@@ -38,7 +38,7 @@ export class GenerateLiquidacionCompraService {
           razonSocial: this.empresa.razonSocial,
           nombreComercial: this.empresa.nombreComercial,
           ruc: this.empresa.ruc,
-          claveAcceso: accessKey, 
+          claveAcceso: accessKey,
           codDoc: '03',
           estab: this.empresa.estab,
           ptoEmi: this.empresa.ptoEmi,
@@ -52,18 +52,17 @@ export class GenerateLiquidacionCompraService {
           obligadoContabilidad: this.empresa.obligadoContabilidad,
           tipoIdentificacionProveedor:
             data.infoLiquidacionCompra.tipoIdentificacionProveedor,
-          razonSocialProveedor:
-            data.infoLiquidacionCompra.razonSocialProveedor,
+          razonSocialProveedor: data.infoLiquidacionCompra.razonSocialProveedor,
           identificacionProveedor:
             data.infoLiquidacionCompra.identificacionProveedor,
-          direccionProveedor: data.infoLiquidacionCompra.direccionProveedor || '',
+          direccionProveedor:
+            data.infoLiquidacionCompra.direccionProveedor || '',
           totalSinImpuestos: formatNumber(
             data.infoLiquidacionCompra.totalSinImpuestos,
           ),
           totalDescuento: formatNumber(
             data.infoLiquidacionCompra.totalDescuento,
           ),
-
 
           totalConImpuestos: {
             totalImpuesto: data.detalles.map((d) => ({
@@ -101,14 +100,16 @@ export class GenerateLiquidacionCompraService {
           })),
         },
         infoAdicional: {
-          campoAdicional: [{ '@nombre': 'emailProveedor', '#': emailProveedor }],
+          campoAdicional: [
+            { '@nombre': 'emailProveedor', '#': emailProveedor },
+          ],
         },
       },
-    };
+    }
 
     return create({ version: '1.0', encoding: 'UTF-8' }, liquidacion).end({
       prettyPrint: true,
-    });
+    })
   }
 
   /**
@@ -123,30 +124,30 @@ export class GenerateLiquidacionCompraService {
     numeroComprobante: string,
     tipoEmision: string,
   ): string {
-    const f = fecha.replace(/\//g, ''); 
+    const f = fecha.replace(/\//g, '')
     const codigoNumerico = Math.floor(
       10000000 + Math.random() * 90000000,
-    ).toString();
+    ).toString()
 
     let clave = `${f}${tipoComprobante}${ruc.padStart(
       13,
       '0',
-    )}${ambiente}${serie}${numeroComprobante}${codigoNumerico}${tipoEmision}`;
+    )}${ambiente}${serie}${numeroComprobante}${codigoNumerico}${tipoEmision}`
 
     // cálculo del dígito verificador módulo 11
-    const pesos = [2, 3, 4, 5, 6, 7];
-    let suma = 0;
-    let j = 0;
+    const pesos = [2, 3, 4, 5, 6, 7]
+    let suma = 0
+    let j = 0
     for (let i = clave.length - 1; i >= 0; i--) {
-      suma += parseInt(clave[i], 10) * pesos[j];
-      j = (j + 1) % pesos.length;
+      suma += parseInt(clave[i], 10) * pesos[j]
+      j = (j + 1) % pesos.length
     }
-    let digito = 11 - (suma % 11);
-    if (digito === 11) digito = 0;
-    if (digito === 10) digito = 1;
+    let digito = 11 - (suma % 11)
+    if (digito === 11) digito = 0
+    if (digito === 10) digito = 1
 
-    clave += digito.toString();
-    return clave;
+    clave += digito.toString()
+    return clave
   }
 
   /**
@@ -156,13 +157,13 @@ export class GenerateLiquidacionCompraService {
     data: LiquidacionCompraInputDto,
     emailProveedor: string,
   ) {
-    const fecha = data.infoLiquidacionCompra.fechaEmision;
-    const tipoComprobante = '03';
-    const ruc = this.empresa.ruc;
-    const ambiente = process.env.AMBIENTE || '1';
-    const serie = this.empresa.estab + this.empresa.ptoEmi;
-    const numeroComprobante = '000000001';
-    const tipoEmision = '1';
+    const fecha = data.infoLiquidacionCompra.fechaEmision
+    const tipoComprobante = '03'
+    const ruc = this.empresa.ruc
+    const ambiente = process.env.AMBIENTE || '1'
+    const serie = this.empresa.estab + this.empresa.ptoEmi
+    const numeroComprobante = '000000001'
+    const tipoEmision = '1'
 
     const accessKey = this.generateClaveAcceso(
       fecha,
@@ -172,16 +173,16 @@ export class GenerateLiquidacionCompraService {
       serie,
       numeroComprobante,
       tipoEmision,
-    );
+    )
 
-    this.logger.log(`Clave de acceso generada: ${accessKey}`);
+    this.logger.log(`Clave de acceso generada: ${accessKey}`)
 
     const xml = this.generateLiquidacionCompraXml(
       data,
       emailProveedor,
       accessKey,
-    );
+    )
 
-    return { xml, accessKey };
+    return { xml, accessKey }
   }
 }
