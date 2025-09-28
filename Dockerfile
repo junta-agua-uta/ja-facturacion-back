@@ -28,6 +28,7 @@ COPY --chown=nodeusr:nodegrp --from=prod-deps /app/node_modules ./node_modules
 COPY --chown=nodeusr:nodegrp --from=build /app/dist ./dist
 COPY --chown=nodeusr:nodegrp prisma ./prisma
 COPY --chown=nodeusr:nodegrp package*.json ./
+COPY --chown=nodeusr:nodegrp firmajunta.p12 ./firmajunta.p12
 
 EXPOSE 4000
 
