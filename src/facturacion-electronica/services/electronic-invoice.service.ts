@@ -4,7 +4,6 @@ import { GenerateInvoiceService } from './generate-invoice.service'
 import { SignInvoiceService } from './sign-invoice.service'
 import { GeneratePdfService } from './generate-pdf.service'
 import { EmailService } from '../email/email.service'
-import { generateAccessKey } from '../utils/autorizacion-code.util'
 import { AutorizationCodeDto } from '../utils/autorization-code.dto'
 import {
   SRIAuthorizationDto,
@@ -23,8 +22,13 @@ export class ElectronicInvoiceService {
     private readonly invoicePdfService: GeneratePdfService,
     private readonly emailService: EmailService,
   ) {
-    this.sriReceptionUrl = process.env.SRI_RECEPTION_URL_TEST || ''
-    this.sriAuthorizationUrl = process.env.SRI_AUTHORIZATION_URL_TEST || ''
+    // Usa TEST por defecto; permite PROD si existen esas variables
+    this.sriReceptionUrl =
+      process.env.SRI_RECEPTION_URL_TEST || process.env.SRI_RECEPTION_URL || ''
+    this.sriAuthorizationUrl =
+      process.env.SRI_AUTHORIZATION_URL_TEST ||
+      process.env.SRI_AUTHORIZATION_URL ||
+      ''
   }
 
   async processInvoice(xmlContent: string, accessKey: string) {
@@ -48,12 +52,16 @@ export class ElectronicInvoiceService {
             'Estructura XML inválida: falta factura.infoTributaria o factura.infoFactura',
         }
       }
+
       const factura = parsedXML.factura
       const infoTributaria = factura.infoTributaria
       const infoFactura = factura.infoFactura
 
-      /** 2) Generar clave de acceso */
-      Logger.log('Generando clave de acceso...')
+      /** 2) (Opcional) Generar clave de acceso local
+       *  Si ya te llega `accessKey` desde afuera, solo la asignamos.
+       */
+      Logger.log('Asignando clave de acceso...')
+      // Si quisieras calcularla aquí, descomenta y arma el dto:
       // const accessKeyData: AutorizationCodeDto = {
       //   date: this.parseDate(infoFactura.fechaEmision as string),
       //   codDoc: infoTributaria.codDoc,
@@ -63,8 +71,8 @@ export class ElectronicInvoiceService {
       //   emissionPoint: infoTributaria.ptoEmi,
       //   sequential: infoTributaria.secuencial,
       // }
-      // const accesKey = generateAccessKey(accessKeyData)
-      Logger.log('Clave de acceso generada:', accessKey)
+      // const accessKey = generateAccessKey(accessKeyData)
+      Logger.log(`Clave de acceso: ${accessKey}`)
 
       factura.infoTributaria.claveAcceso = accessKey
 
@@ -76,13 +84,38 @@ export class ElectronicInvoiceService {
       /** 3) Firmar el XML */
       Logger.log('Firmando XML...')
       const signature = this.signService.getP12Certificate()
-      const password = process.env.SIGNATURE_PASSWORD
-      const signedInvoice = this.signService.signXml(
+      const password = process.env.SIGNATURE_PASSWORD ?? ''
+      if (!password) {
+        throw new Error('SIGNATURE_PASSWORD no definido')
+      }
+
+      // (Opcional pero recomendado) inspeccionar el P12 antes de firmar
+      try {
+        const certInfo = this.signService.verifyP12(signature, password)
+        Logger.log(`[P12] subject=${certInfo.subject} alg=${certInfo.alg}`)
+      } catch (vErr: any) {
+        Logger.warn(
+          'No se pudo verificar el .p12 antes de firmar: ' + vErr?.message,
+        )
+      }
+
+      // OJO: signXml es async -> await
+      const signedInvoice = await this.signService.signXml(
         signature,
         password,
         updatedInvoice,
       )
       Logger.log('XML firmado correctamente.')
+
+      // (Opcional) validar que el X509 embebido es decodificable
+      try {
+        const x = await this.signService.checkSigned(signedInvoice)
+        Logger.log(
+          `[SIGN] serial=${x.serialNumber} validFrom=${x.notBefore} validTo=${x.notAfter}`,
+        )
+      } catch (xErr: any) {
+        Logger.warn('No se pudo validar X509 embebido: ' + xErr?.message)
+      }
 
       /** 4) Enviar a recepción del SRI */
       Logger.log('Enviando a recepción del SRI...')
@@ -92,6 +125,7 @@ export class ElectronicInvoiceService {
           this.sriReceptionUrl,
         )
       Logger.log(reception)
+
       if (
         !reception ||
         reception.RespuestaRecepcionComprobante.estado !== 'RECIBIDA'
@@ -118,6 +152,7 @@ export class ElectronicInvoiceService {
       const autorizacion =
         authorization?.RespuestaAutorizacionComprobante?.autorizaciones
           ?.autorizacion
+
       Logger.log(
         'Mensajes de autorización:',
         JSON.stringify(autorizacion?.mensajes, null, 2),
@@ -155,11 +190,12 @@ export class ElectronicInvoiceService {
           estado: autorizacion.estado,
         }
       }
+
       const email = pdf.email as string
       const pdfBuffer = pdf.pdfBuffer
 
       Logger.log('Enviando correo...')
-      if (pdfBuffer.byteLength > 0) {
+      if (pdfBuffer && pdfBuffer.byteLength > 0) {
         await this.emailService.sendEmailWithInvoices(
           email,
           // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
@@ -180,8 +216,8 @@ export class ElectronicInvoiceService {
         error instanceof Error
           ? error.message
           : 'Error desconocido al procesar la factura'
-      Logger.error('Error al procesar la factura:' + errorMessage)
-      return { message: 'Error al procesar la factura:' + errorMessage }
+      Logger.error('Error al procesar la factura: ' + errorMessage)
+      return { message: 'Error al procesar la factura: ' + errorMessage }
     }
   }
 
@@ -197,6 +233,7 @@ export class ElectronicInvoiceService {
       const autorizacion =
         authorization?.RespuestaAutorizacionComprobante?.autorizaciones
           ?.autorizacion
+
       Logger.log(
         'Mensajes de autorización:',
         JSON.stringify(autorizacion?.mensajes, null, 2),
@@ -234,11 +271,12 @@ export class ElectronicInvoiceService {
           estado: autorizacion.estado,
         }
       }
+
       const email = pdf.email as string
       const pdfBuffer = pdf.pdfBuffer
 
       Logger.log('Enviando correo...')
-      if (pdfBuffer.byteLength > 0) {
+      if (pdfBuffer && pdfBuffer.byteLength > 0) {
         await this.emailService.sendEmailWithInvoices(
           email,
           // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
@@ -259,8 +297,8 @@ export class ElectronicInvoiceService {
         error instanceof Error
           ? error.message
           : 'Error desconocido al procesar la factura'
-      Logger.error('Error al procesar la factura:', errorMessage)
-      return { message: 'Error al procesar la factura:' + errorMessage }
+      Logger.error('Error al procesar la factura: ' + errorMessage)
+      return { message: 'Error al procesar la factura: ' + errorMessage }
     }
   }
 

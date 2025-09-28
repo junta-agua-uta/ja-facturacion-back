@@ -6,7 +6,7 @@
     <razonSocial>MANOBANDA YUGCHA JOSE FRANCISCO</razonSocial>
     <nombreComercial>Junta Administradora de Agua Potable Miñarica Santa Rosa</nombreComercial>
     <ruc>1891809449001</ruc>
-    <claveAcceso>1309202503189180944900110013000000000019135053811</claveAcceso>
+    <claveAcceso>1309202503189180944900110013000000000013995916411</claveAcceso>
     <codDoc>03</codDoc>
     <estab>001</estab>
     <ptoEmi>300</ptoEmi>
@@ -59,4 +59,4 @@
   <infoAdicional>
     <campoAdicional nombre="emailProveedor">proveedor@empresa.com</campoAdicional>
   </infoAdicional>
-</liquidacionCompra>
+<xades:QualifyingProperties Target="#Signature-1759099587093" xmlns:xades="http://uri.etsi.org/01903/v1.3.2#"><xades:SignedProperties Id="SignedProperties-1759099587093"><xades:SignedSignatureProperties><xades:SigningTime>2025-09-28T22:46:27.094Z</xades:SigningTime><xades:SigningCertificateV2><xades:Cert><xades:DigestAlgAndValue><ds:DigestMethod Algorithm="http://www.w3.org/2001/04/xmlenc#sha256" xmlns:ds="http://www.w3.org/2000/09/xmldsig#"/><ds:DigestValue xmlns:ds="http://www.w3.org/2000/09/xmldsig#">gu/FhqurZ+gshlmRjNw5NEF1+473W2jIWfk4uWBuwNY=</ds:DigestValue></xades:DigestAlgAndValue><xades:IssuerSerialV2><xades:X509IssuerName>C=EC, O=FIRMASEGURA S.A.S., OU=ENTIDAD DE CERTIFICACION DE INFORMACION, ST=TUNGURAHUA, CN=AUTORIDAD DE CERTIFICACION SUBCA-1 FIRMASEGURA S.A.S., L=AMBATO</xades:X509IssuerName><xades:X509SerialNumber>63830722391601277562411096922960925364</xades:X509SerialNumber></xades:IssuerSerialV2></xades:Cert></xades:SigningCertificateV2><xades:SignaturePolicyIdentifier><xades:SignaturePolicyImplied/></xades:SignaturePolicyIdentifier><xades:SignatureProductionPlace><xades:City>Santa Rosa</xades:City><xades:CountryName>EC</xades:CountryName></xades:SignatureProductionPlace><xades:SignerRole><xades:ClaimedRoles><xades:ClaimedRole>Representante Legal</xades:ClaimedRole></xades:ClaimedRoles></xades:SignerRole></xades:SignedSignatureProperties></xades:SignedProperties></xades:QualifyingProperties></liquidacionCompra>
