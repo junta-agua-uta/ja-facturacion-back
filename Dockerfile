@@ -22,6 +22,7 @@ WORKDIR /app
 
 RUN addgroup -S nodegrp && adduser -S nodeusr -G nodegrp \
  && apk add --no-cache openssl
+RUN chown -R nodeusr:nodegrp /app
 USER nodeusr
 
 COPY --chown=nodeusr:nodegrp --from=prod-deps /app/node_modules ./node_modules
