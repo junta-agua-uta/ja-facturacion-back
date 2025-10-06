@@ -16,8 +16,6 @@ export class LoginService {
 
   async login(loginUserDto: LoginUserDto): Promise<{ access_token: string }> {
     const validate = await this.validateUser(loginUserDto)
-    Logger.log('--------------------')
-    Logger.log(validate)
 
     if (!validate) {
       throw new HttpException('Credenciales Invalidas', HttpStatus.UNAUTHORIZED)
@@ -46,11 +44,9 @@ export class LoginService {
     ESTADO: boolean
     FECHA_CREACION: Date | null
   } | null> {
-    console.log(loginUserDto)
     const user = await this.findByCedulaService.findUserByCedula(
       loginUserDto.cedula,
     )
-    console.log(user)
     if (user && (await bcrypt.compare(loginUserDto.password, user.HASH))) {
       const { HASH, SALT, ...result } = user
 
