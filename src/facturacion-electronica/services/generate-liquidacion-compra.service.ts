@@ -14,7 +14,7 @@ export class GenerateLiquidacionCompraService {
     dirMatriz: 'Santa Rosa',
     estab: '001',
     ptoEmi: '300',
-    contribuyenteEspecial: '123',
+    //contribuyenteEspecial: '123',
     obligadoContabilidad: 'SI',
   }
 
@@ -42,13 +42,13 @@ export class GenerateLiquidacionCompraService {
           codDoc: '03',
           estab: this.empresa.estab,
           ptoEmi: this.empresa.ptoEmi,
-          secuencial: '000000001',
+          secuencial: '000000255',
           dirMatriz: this.empresa.dirMatriz,
         },
         infoLiquidacionCompra: {
           fechaEmision: data.infoLiquidacionCompra.fechaEmision,
           dirEstablecimiento: data.infoLiquidacionCompra.dirEstablecimiento,
-          contribuyenteEspecial: this.empresa.contribuyenteEspecial,
+          //contribuyenteEspecial: this.empresa.contribuyenteEspecial,
           obligadoContabilidad: this.empresa.obligadoContabilidad,
           tipoIdentificacionProveedor:
             data.infoLiquidacionCompra.tipoIdentificacionProveedor,
@@ -162,7 +162,7 @@ export class GenerateLiquidacionCompraService {
     const ruc = this.empresa.ruc
     const ambiente = process.env.AMBIENTE || '1'
     const serie = this.empresa.estab + this.empresa.ptoEmi
-    const numeroComprobante = '000000001'
+    const numeroComprobante = '000000255'
     const tipoEmision = '1'
 
     const accessKey = this.generateClaveAcceso(

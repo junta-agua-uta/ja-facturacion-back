@@ -7,10 +7,13 @@ import { ElectronicInvoiceService } from './services/electronic-invoice.service'
 import { GenerateLiquidacionCompraService } from './services/generate-liquidacion-compra.service'
 import { LiquidacionCompraController } from './controllers/liquidacion-compra.controller'
 import { ElectronicLiquidacionService } from './services/electronic-liquidacion.service'
+import { SignLiquidacionService } from './services/sign-liquidation.service'
+
 
 @Module({
   controllers: [LiquidacionCompraController],
   providers: [
+    SignLiquidacionService,
     GenerateInvoiceService,
     GeneratePdfService,
     SignInvoiceService,

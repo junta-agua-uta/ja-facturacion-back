@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
 import * as xml2js from 'xml2js';
-import { SignInvoiceService } from './sign-invoice.service';
+import { SignLiquidacionService } from './sign-liquidation.service'
 import { GenerateLiquidacionCompraService } from './generate-liquidacion-compra.service';
 import { GenerateInvoiceService } from './generate-invoice.service';
 import { LiquidacionCompraInputDto } from '../dto/liquidacion-compra.dto';
@@ -15,7 +15,7 @@ export class ElectronicLiquidacionService {
 
   constructor(
     private readonly prisma: PrismaClient,
-    private readonly signService: SignInvoiceService,
+    private readonly signLiquidacionService: SignLiquidacionService, 
     private readonly liquidacionService: GenerateLiquidacionCompraService,
     private readonly invoiceService: GenerateInvoiceService,
   ) {
@@ -82,12 +82,12 @@ export class ElectronicLiquidacionService {
       });
       const updatedXml: string = builder.buildObject(parsedXML);
 
-      // Firmar XML
-      this.logger.log('Firmando XML...');
-      const p12 = this.signService.getP12Certificate();
-      const password = process.env.SIGNATURE_PASSWORD;
-      const signedXml = this.signService.signXml(p12, password, updatedXml);
-      this.logger.log('XML firmado correctamente.');
+       // Firmar XML
+       this.logger.log('Firmando XML con servicio dedicado de liquidaciones...');
+       const p12 = this.signLiquidacionService.getP12Certificate(); // ⬅️ USAR SERVICIO NUEVO
+       const password = process.env.SIGNATURE_PASSWORD;
+       const signedXml = this.signLiquidacionService.signXml(p12, password, updatedXml); // ⬅️ USAR SERVICIO NUEVO
+       this.logger.log('XML firmado correctamente.');
 
       // Enviar a recepción del SRI
       this.logger.log('Enviando a recepción del SRI...');

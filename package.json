@@ -35,14 +35,18 @@
     "exceljs": "^4.4.0",
     "express": "^5.1.0",
     "facturacion": "file:",
+    "node-forge": "^1.3.1",
     "nodemailer": "^7.0.3",
     "pdfkit": "^0.17.1",
     "reflect-metadata": "^0.2.0",
     "rxjs": "^7.8.2",
     "soap": "^1.1.11",
+    "sri-signer": "^1.0.4",
     "swagger-ui-express": "^5.0.1",
     "xml2js": "^0.6.2",
-    "xmlbuilder2": "^3.1.1"
+    "xmlbuilder2": "^3.1.1",
+    "xmldom": "^0.6.0",
+    "xpath": "^0.0.34"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.3.1",
