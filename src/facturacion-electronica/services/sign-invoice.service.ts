@@ -34,10 +34,7 @@ export class SignInvoiceService {
   }
 
   getP12Certificate(): Buffer {
-    const p12Path =
-      process.env.NODE_ENV === 'production'
-        ? '/tmp/firmajunta.p12' // Ruta en Render
-        : './firmajunta.p12' // Ruta local
+    const p12Path = './firmajunta.p12'
 
     try {
       return readFileSync(p12Path)
