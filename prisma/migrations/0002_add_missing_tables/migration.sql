@@ -117,15 +117,22 @@ ALTER TABLE `detalles_factura` ADD CONSTRAINT `detalles_factura_ID_RAZON_fkey` F
 -- AddForeignKey
 ALTER TABLE `detalle_liquidacion` ADD CONSTRAINT `detalle_liquidacion_liquidacionId_fkey` FOREIGN KEY (`liquidacionId`) REFERENCES `liquidacion_compra`(`id`) ON DELETE NO ACTION ON UPDATE CASCADE;
 
--- RenameIndex
-ALTER TABLE `clientes` RENAME INDEX `CLIENTES_IDENTIFICACION_key` TO `clientes_IDENTIFICACION_key`;
+-- clientes: CLIENTES_IDENTIFICACION_key -> clientes_IDENTIFICACION_key
+ALTER TABLE `clientes`
+  DROP INDEX `CLIENTES_IDENTIFICACION_key`,
+  ADD UNIQUE INDEX `clientes_IDENTIFICACION_key` (`IDENTIFICACION`);
 
--- RenameIndex
-ALTER TABLE `medidores` RENAME INDEX `MEDIDORES_NUMERO_MEDIDOR_key` TO `medidores_NUMERO_MEDIDOR_key`;
+-- medidores: MEDIDORES_NUMERO_MEDIDOR_key -> medidores_NUMERO_MEDIDOR_key
+ALTER TABLE `medidores`
+  DROP INDEX `MEDIDORES_NUMERO_MEDIDOR_key`,
+  ADD UNIQUE INDEX `medidores_NUMERO_MEDIDOR_key` (`NUMERO_MEDIDOR`);
 
--- RenameIndex
-ALTER TABLE `usuarios` RENAME INDEX `USUARIOS_CEDULA_key` TO `usuarios_CEDULA_key`;
+-- usuarios: USUARIOS_CEDULA_key -> usuarios_CEDULA_key
+ALTER TABLE `usuarios`
+  DROP INDEX `USUARIOS_CEDULA_key`,
+  ADD UNIQUE INDEX `usuarios_CEDULA_key` (`CEDULA`);
 
--- RenameIndex
-ALTER TABLE `usuarios` RENAME INDEX `USUARIOS_CORREO_key` TO `usuarios_CORREO_key`;
-
+-- usuarios: USUARIOS_CORREO_key -> usuarios_CORREO_key
+ALTER TABLE `usuarios`
+  DROP INDEX `USUARIOS_CORREO_key`,
+  ADD UNIQUE INDEX `usuarios_CORREO_key` (`CORREO`);
