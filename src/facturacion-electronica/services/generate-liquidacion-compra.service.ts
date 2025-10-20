@@ -42,7 +42,7 @@ export class GenerateLiquidacionCompraService {
           codDoc: '03',
           estab: this.empresa.estab,
           ptoEmi: this.empresa.ptoEmi,
-          secuencial: '000000255',
+          secuencial: '000000270',
           dirMatriz: this.empresa.dirMatriz,
         },
         infoLiquidacionCompra: {
@@ -162,7 +162,7 @@ export class GenerateLiquidacionCompraService {
     const ruc = this.empresa.ruc
     const ambiente = process.env.AMBIENTE || '1'
     const serie = this.empresa.estab + this.empresa.ptoEmi
-    const numeroComprobante = '000000255'
+    const numeroComprobante = '000000270'
     const tipoEmision = '1'
 
     const accessKey = this.generateClaveAcceso(

@@ -1,6 +1,7 @@
+import { signLiquidacionCompraXml } from '@karen-mich/sri-invoice-signer';
 import { Injectable, Logger } from '@nestjs/common';
 import { readFileSync, writeFileSync } from 'fs';
-import { signLiquidacionCompraXml } from 'ec-sri-invoice-signer'; // ⬅️ Usar nueva función
+
 
 @Injectable()
 export class SignLiquidacionService {
