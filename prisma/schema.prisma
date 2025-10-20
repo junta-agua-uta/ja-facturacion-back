@@ -9,24 +9,24 @@ datasource db {
 }
 
 model USUARIOS {
-  @@map("usuarios")
   ID             Int        @id @default(autoincrement())
-  CEDULA         String     @unique
+  CEDULA         String     @unique(map: "usuarios_CEDULA_key")
   NOMBRE         String
   APELLIDO       String
-  CORREO         String     @unique
+  CORREO         String     @unique(map: "usuarios_CORREO_key")
   HASH           String
   SALT           String
   ROL            ROL        @default(CONTADOR)
   ESTADO         Boolean    @default(true)
   FECHA_CREACION DateTime?  @default(now())
   FACTURAS       FACTURAS[]
+
+  @@map("usuarios")
 }
 
 model CLIENTES {
-  @@map("clientes")
   ID               Int         @id @default(autoincrement())
-  IDENTIFICACION   String      @unique
+  IDENTIFICACION   String      @unique(map: "clientes_IDENTIFICACION_key")
   RAZON_SOCIAL     String
   NOMBRE_COMERCIAL String?
   DIRECCION        String
@@ -46,10 +46,11 @@ model CLIENTES {
   CUENTAS          CUENTAS[]
   FACTURAS         FACTURAS[]
   MEDIDORES        MEDIDORES[]
+
+  @@map("clientes")
 }
 
 model CUENTAS {
-  @@map("cuentas")
   ID            Int       @id @default(autoincrement())
   FECHA_EMISION DateTime? @default(now())
   VALOR         Float?
@@ -59,10 +60,10 @@ model CUENTAS {
   cliente       CLIENTES  @relation(fields: [ID_CLIENTE], references: [ID], onDelete: NoAction)
 
   @@index([ID_CLIENTE], map: "CUENTAS_ID_CLIENTE_fkey")
+  @@map("cuentas")
 }
 
 model ABONOS {
-  @@map("abonos")
   ID          Int      @id @default(autoincrement())
   VALOR_ABONO Float
   FECHA_ABONO DateTime @default(now())
@@ -72,12 +73,12 @@ model ABONOS {
   cuenta      CUENTAS  @relation(fields: [ID_CUENTA], references: [ID], onDelete: NoAction)
 
   @@index([ID_CUENTA], map: "ABONOS_ID_CUENTA_fkey")
+  @@map("abonos")
 }
 
 model MEDIDORES {
-  @@map("medidores")
   ID               Int                @id @default(autoincrement())
-  NUMERO_MEDIDOR   String             @unique
+  NUMERO_MEDIDOR   String             @unique(map: "medidores_NUMERO_MEDIDOR_key")
   MODELO           String?
   MARCA            String?
   UBICACION        String?
@@ -88,10 +89,10 @@ model MEDIDORES {
   cliente          CLIENTES           @relation(fields: [ID_CLIENTE], references: [ID], onDelete: NoAction)
 
   @@index([ID_CLIENTE], map: "MEDIDORES_ID_CLIENTE_fkey")
+  @@map("medidores")
 }
 
 model DETALLES_MEDIDOR {
-  @@map("detalles_medidor")
   ID            Int       @id @default(autoincrement())
   ID_MEDIDOR    Int
   FECHA_LECTURA DateTime  @default(now())
@@ -99,19 +100,20 @@ model DETALLES_MEDIDOR {
   medidor       MEDIDORES @relation(fields: [ID_MEDIDOR], references: [ID], onDelete: NoAction)
 
   @@index([ID_MEDIDOR], map: "DETALLES_MEDIDOR_ID_MEDIDOR_fkey")
+  @@map("detalles_medidor")
 }
 
 model SUCURSALES {
-  @@map("sucursales")
   ID            Int        @id @default(autoincrement())
   NOMBRE        String?
   UBICACION     String?
   PUNTO_EMISION String?
   FACTURAS      FACTURAS[]
+
+  @@map("sucursales")
 }
 
 model RAZONES {
-  @@map("razones")
   ID               Int                @id @default(autoincrement())
   CODIGO           String?
   RAZON            String?
@@ -119,10 +121,11 @@ model RAZONES {
   PRECIO2          Decimal?           @db.Decimal(10, 2)
   IVA              Decimal?           @db.Decimal(5, 2)
   DETALLES_FACTURA DETALLES_FACTURA[]
+
+  @@map("razones")
 }
 
 model FACTURAS {
-  @@map("facturas")
   ID                 Int                @id @default(autoincrement())
   SECUENCIA          Int
   FECHA_EMISION      DateTime?          @default(now())
@@ -148,10 +151,10 @@ model FACTURAS {
   @@index([ID_MEDIDOR], map: "FACTURAS_ID_MEDIDOR_fkey")
   @@index([ID_SUCURSAL], map: "FACTURAS_ID_SUCURSAL_fkey")
   @@index([ID_USUARIO], map: "FACTURAS_ID_USUARIO_fkey")
+  @@map("facturas")
 }
 
 model DETALLES_FACTURA {
-  @@map("detalles_factura")
   ID          Int      @id @default(autoincrement())
   ID_FACTURA  Int
   ID_RAZON    Int
@@ -165,10 +168,10 @@ model DETALLES_FACTURA {
 
   @@index([ID_FACTURA], map: "DETALLES_FACTURA_ID_FACTURA_fkey")
   @@index([ID_RAZON], map: "DETALLES_FACTURA_ID_RAZON_fkey")
+  @@map("detalles_factura")
 }
 
 model CONCEPTOS {
-  @@map("conceptos")
   ID             Int       @id @default(autoincrement())
   CODIGO         String    @unique(map: "CODIGO") @db.VarChar(32)
   COD_INTERNO    String?   @db.VarChar(32)
@@ -177,11 +180,12 @@ model CONCEPTOS {
   REQUIERE_MES   Boolean   @default(false)
   ESTADO         Boolean   @default(true)
   FECHA_CREACION DateTime? @default(now()) @db.DateTime(0)
+
+  @@map("conceptos")
 }
 
 model LiquidacionCompra {
-  @@map("liquidacion_compra")
-  id                          Int                  @id @default(autoincrement())
+  id                          Int    @id @default(autoincrement())
   fechaEmision                String
   dirEstablecimiento          String
   tipoIdentificacionProveedor String
@@ -191,16 +195,27 @@ model LiquidacionCompra {
   totalDescuento              Float
   importeTotal                Float
   moneda                      String
-  xml                         String?              @db.LongText
-  accessKey                   String?
-  estadoSri                   String?
-  createdAt                   DateTime             @default(now())
-  updatedAt                   DateTime             @updatedAt
-  detalles                    DetalleLiquidacion[]
+
+  estab          String  @default("001") @db.VarChar(3)
+  ptoEmi         String  @default("300") @db.VarChar(3)
+  secuencial     Int     @default(0)
+  emailProveedor String?
+
+  xml       String?              @db.LongText
+  accessKey String?              @unique
+  estadoSri String?
+  createdAt DateTime             @default(now())
+  updatedAt DateTime             @updatedAt
+  detalles  DetalleLiquidacion[]
+
+  // AGREGAR ESTA RELACIÓN
+  emisorId Int
+  emisor   Emisor @relation(fields: [emisorId], references: [id], onDelete: Cascade)
+
+  @@map("liquidacion_compra")
 }
 
 model DetalleLiquidacion {
-  @@map("detalle_liquidacion")
   id                       Int               @id @default(autoincrement())
   codigoPrincipal          String
   descripcion              String
@@ -217,6 +232,7 @@ model DetalleLiquidacion {
   liquidacion              LiquidacionCompra @relation(fields: [liquidacionId], references: [id], onDelete: NoAction)
 
   @@index([liquidacionId])
+  @@map("detalle_liquidacion")
 }
 
 enum ROL {
@@ -236,4 +252,37 @@ enum TIPO_PAGO {
   CREDITO
   DEPOSITO
   CHEQUE
+}
+
+model Emisor {
+  id                    Int      @id @default(autoincrement())
+  ruc                   String   @unique
+  razonSocial           String
+  nombreComercial       String?
+  dirMatriz             String
+  estab                 String   @db.VarChar(3)
+  ptoEmi                String   @db.VarChar(3)
+  obligadoContabilidad  String   @default("SI")
+  contribuyenteEspecial String?
+  ambiente              String   @default("1")
+  activo                Boolean  @default(true)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  // AGREGAR ESTA RELACIÓN
+  liquidacionesCompra LiquidacionCompra[]
+
+  @@map("emisor")
+}
+
+model SecuencialDoc {
+  id        Int      @id @default(autoincrement())
+  codDoc    String   @db.VarChar(2) // '03'
+  estab     String   @db.VarChar(3)
+  ptoEmi    String   @db.VarChar(3)
+  lastSeq   Int      @default(0)
+  updatedAt DateTime @updatedAt
+
+  @@unique([codDoc, estab, ptoEmi], name: "uniq_doc_serie")
+  @@map("secuencial_doc")
 }
