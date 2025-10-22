@@ -22,136 +22,17 @@ export class ElectronicLiquidacionService {
     private readonly liquidacionService: GenerateLiquidacionCompraService,
     private readonly invoiceService: GenerateInvoiceService,
   ) {
-    this.sriReceptionUrl = process.env.SRI_RECEPTION_URL_TEST || ''
-    this.sriAuthorizationUrl = process.env.SRI_AUTHORIZATION_URL_TEST || ''
-  }
-
-  // --- Helpers de validación de identificación ---
-  private esCedulaValida(ec: string): boolean {
-    if (!/^\d{10}$/.test(ec)) return false
-    const prov = parseInt(ec.substring(0, 2), 10)
-    if (prov < 1 || prov > 24) return false
-    const d = ec.split('').map(Number)
-    const verificador = d.pop()!
-    let suma = 0
-    d.forEach((n, i) => {
-      let v = n
-      if (i % 2 === 0) {
-        v = n * 2
-        if (v > 9) v -= 9
-      }
-      suma += v
-    })
-    const mod = suma % 10
-    const dig = mod === 0 ? 0 : 10 - mod
-    return dig === verificador
-  }
-
-  private esRucBasicoValido(ruc: string): boolean {
-    // Validación básica suficiente para pruebas
-    return /^\d{13}$/.test(ruc) && ruc.endsWith('001')
+    this.sriReceptionUrl = process.env.SRI_RECEPTION_URL_TEST || '';
+    this.sriAuthorizationUrl = process.env.SRI_AUTHORIZATION_URL_TEST || '';
   }
 
   async enviarAlSRI(data: LiquidacionCompraInputDto, emailProveedor: string) {
     try {
-      // 1) Obtener EMISOR desde BD
-      const emisorRuc = process.env.EMISOR_RUC
-      const emisor = emisorRuc
-        ? await this.prisma.emisor.findUnique({ where: { ruc: emisorRuc } })
-        : await this.prisma.emisor.findFirst({ where: { activo: true } })
-
-      if (!emisor) {
-        this.logger.error(
-          'No se encontró Emisor (revisa tabla "emisor" o EMISOR_RUC)',
-        )
-        return { success: false, message: 'No hay Emisor configurado' }
-      }
-
-      // 1.b) Validación de identificación del proveedor (antes de secuencial)
-      const tipoId = data.infoLiquidacionCompra.tipoIdentificacionProveedor
-      const identificacion = data.infoLiquidacionCompra.identificacionProveedor
-
-      if (tipoId === '05') {
-        // cédula
-        if (!this.esCedulaValida(identificacion)) {
-          return {
-            success: false,
-            message: 'Identificación de proveedor inválida (cédula).',
-            detalles: 'La cédula no cumple el dígito verificador.',
-          }
-        }
-      } else if (tipoId === '04') {
-        // RUC
-        if (!this.esRucBasicoValido(identificacion)) {
-          return {
-            success: false,
-            message: 'Identificación de proveedor inválida (RUC).',
-            detalles: 'El RUC debe tener 13 dígitos y terminar en 001.',
-          }
-        }
-      }
-
-      // 2) Sincronizar y obtener el siguiente SECUENCIAL (codDoc '03') en una transacción
-      const { nextSeq } = await this.prisma.$transaction(async (tx) => {
-        // a) Máximo secuencial ya guardado en tu BD para esta serie (por si secuencial_doc se reseteó)
-        const currentMax = await tx.liquidacionCompra.aggregate({
-          _max: { secuencial: true },
-          where: {
-            estab: emisor.estab,
-            ptoEmi: emisor.ptoEmi,
-            emisorId: emisor.id,
-          },
-        })
-        const desiredNext = (currentMax._max.secuencial ?? 0) + 1
-
-        // b) Leer contador actual de secuencial_doc
-        const key = { codDoc: '03', estab: emisor.estab, ptoEmi: emisor.ptoEmi }
-        const existing = await tx.secuencialDoc.findUnique({
-          where: { uniq_doc_serie: key },
-        })
-
-        let nextSeq: number
-
-        if (!existing) {
-          // No existe registro -> créalo directamente al siguiente correcto
-          const created = await tx.secuencialDoc.create({
-            data: { ...key, lastSeq: desiredNext },
-          })
-          nextSeq = created.lastSeq
-        } else if (existing.lastSeq < desiredNext) {
-          // El contador local está ATRÁS -> saltarlo al siguiente correcto
-          const updated = await tx.secuencialDoc.update({
-            where: { uniq_doc_serie: key },
-            data: { lastSeq: desiredNext },
-          })
-          nextSeq = updated.lastSeq
-        } else {
-          // El contador local está A TIEMPO o ADELANTADO -> simplemente incrementa
-          const updated = await tx.secuencialDoc.update({
-            where: { uniq_doc_serie: key },
-            data: { lastSeq: { increment: 1 } },
-          })
-          nextSeq = updated.lastSeq
-        }
-
-        return { nextSeq }
-      })
-
-      const secuencialNumber = nextSeq
-      const secuencialStr = secuencialNumber.toString().padStart(9, '0')
-
-      // 3) Generar XML + claveAcceso usando datos del EMISOR y el SECUENCIAL
-      this.logger.log('Generando XML de liquidación de compra...')
-      const { xml, accessKey } =
-        this.liquidacionService.generateLiquidacionCompra(
-          data,
-          emailProveedor,
-          {
-            emisor,
-            secuencial: secuencialStr,
-            ambiente: process.env.AMBIENTE || '1',
-          },
-        )
+      this.logger.log('Generando XML de liquidación de compra...');
+      const { xml, accessKey } = this.liquidacionService.generateLiquidacionCompra(
+        data,
+        emailProveedor,
+      );
 
       // 4) Guardar liquidación en BD CONECTANDO el emisor
       const liquidacionDb = await this.prisma.liquidacionCompra.create({
@@ -199,10 +80,10 @@ export class ElectronicLiquidacionService {
         include: { detalles: true },
       })
 
-      // --- Reconstrucción, firma, envío y autorización ---
-      this.logger.log('Reconstruyendo XML antes de firmar...')
-      const parser = new xml2js.Parser({ explicitArray: false })
-      const parsedXML = await parser.parseStringPromise(xml)
+      // --- Paso igual a FACTURA ---
+      this.logger.log('Reconstruyendo XML antes de firmar...');
+      const parser = new xml2js.Parser({ explicitArray: false });
+      const parsedXML = await parser.parseStringPromise(xml);
 
       if (!parsedXML?.liquidacionCompra?.infoTributaria) {
         this.logger.error(
@@ -219,25 +100,22 @@ export class ElectronicLiquidacionService {
 
       const builder = new xml2js.Builder({
         xmldec: { version: '1.0', encoding: 'UTF-8' },
-      })
-      const updatedXml: string = builder.buildObject(parsedXML)
+      });
+      const updatedXml: string = builder.buildObject(parsedXML);
 
-      this.logger.log('Firmando XML...')
-      const p12 = this.signLiquidacionService.getP12Certificate()
-      const password = process.env.SIGNATURE_PASSWORD
-      const signedXml = this.signLiquidacionService.signXml(
-        p12,
-        password,
-        updatedXml,
-      )
-      this.logger.log('XML firmado correctamente.')
+      // Firmar XML
+      this.logger.log('Firmando XML...');
+      const p12 = this.signService.getP12Certificate();
+      const password = process.env.SIGNATURE_PASSWORD;
+      const signedXml = this.signService.signXml(p12, password, updatedXml);
+      this.logger.log('XML firmado correctamente.');
 
-      this.logger.log('Enviando a recepción del SRI...')
-      const reception: SRIAuthorizationDto =
-        await this.invoiceService.documentReception(
-          signedXml,
-          this.sriReceptionUrl,
-        )
+      // Enviar a recepción del SRI
+      this.logger.log('Enviando a recepción del SRI...');
+      const reception: SRIAuthorizationDto = await this.invoiceService.documentReception(
+        signedXml,
+        this.sriReceptionUrl,
+      );
 
       if (
         !reception ||
@@ -355,17 +233,18 @@ export class ElectronicLiquidacionService {
         }),
       ])
 
-      return {
-        total,
-        page: safePage,
-        limit: safeLimit,
-        totalPages: Math.ceil(total / safeLimit),
-        data: liquidaciones,
-      }
-    } catch (error: unknown) {
-      const msg = error instanceof Error ? error.message : 'Error desconocido'
-      this.logger.error('Error al listar liquidaciones: ' + msg)
-      throw new Error('Error al listar liquidaciones: ' + msg)
-    }
+    return {
+      total,
+      page: safePage,
+      limit: safeLimit,
+      totalPages: Math.ceil(total / safeLimit),
+      data: liquidaciones,
+    };
+  } catch (error: unknown) {
+    const msg = error instanceof Error ? error.message : 'Error desconocido';
+    this.logger.error('Error al listar liquidaciones: ' + msg);
+    throw new Error('Error al listar liquidaciones: ' + msg);
   }
+}
+
 }

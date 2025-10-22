@@ -20,8 +20,15 @@ import { SignLiquidacionService } from './services/sign-liquidation.service'
     ElectronicInvoiceService,
     GenerateLiquidacionCompraService,
     ElectronicLiquidacionService,
+    LiquidacionCalculationService,
+    GenerarExcelLiquidacionesService,
   ],
   imports: [EmailModule],
-  exports: [GenerateInvoiceService, ElectronicInvoiceService, GenerateLiquidacionCompraService, ElectronicLiquidacionService],
+  exports: [
+    GenerateInvoiceService,
+    ElectronicInvoiceService,
+    GenerateLiquidacionCompraService,
+    ElectronicLiquidacionService,
+  ],
 })
 export class FacturacionModule {}

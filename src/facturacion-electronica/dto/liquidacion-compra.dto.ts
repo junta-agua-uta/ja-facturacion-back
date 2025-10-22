@@ -1,4 +1,22 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+
+// DTO simplificado - SOLO estos 5 campos obligatorios
+export class DetalleSimplificadoDto {
+  @ApiProperty({ example: 'Producto de ejemplo', description: 'Descripción del producto/servicio' })
+  descripcion: string;
+
+  @ApiProperty({ example: 10, description: 'Cantidad del producto/servicio' })
+  cantidad: number;
+
+  @ApiProperty({ example: 10.00, description: 'Precio unitario' })
+  precioUnitario: number;
+
+  @ApiProperty({ example: 0.00, description: 'Valor del descuento' })
+  descuento: number;
+
+  @ApiProperty({ example: 12.00, description: 'Valor del impuesto (IVA)' })
+  valorImpuesto: number;
+}
 
 export class InfoLiquidacionCompraDto {
   @ApiProperty({ example: '13/09/2025' })
@@ -33,7 +51,7 @@ export class InfoLiquidacionCompraDto {
 }
 
 export class DetalleLiquidacionDto {
-  @ApiProperty({ example: 'PROD001' })
+  @ApiProperty({ example: 'PROD001', description: 'Código generado automáticamente' })
   codigoPrincipal: string;
 
   @ApiProperty({ example: 'Producto de ejemplo' })
@@ -51,10 +69,10 @@ export class DetalleLiquidacionDto {
   @ApiProperty({ example: 100.00 })
   precioTotalSinImpuesto: number;
 
-  @ApiProperty({ example: '2' })
+  @ApiProperty({ example: '2', description: 'Siempre será "2" (IVA)' })
   codigoImpuesto: string;
 
-  @ApiProperty({ example: '2' })
+  @ApiProperty({ example: '2', description: 'Siempre será "2"' })
   codigoPorcentajeImpuesto: string;
 
   @ApiProperty({ example: 12.00 })
@@ -66,11 +84,11 @@ export class DetalleLiquidacionDto {
   @ApiProperty({ example: 12.00 })
   valorImpuesto: number;
 
-  @ApiProperty({ example: 'AUX001', required: false })
-  codigoAuxiliar?: string; // ✅ opcional
+  @ApiProperty({ example: 'AUX001', description: 'Código generado automáticamente' })
+  codigoAuxiliar: string;
 
-  @ApiProperty({ example: 'UN', required: false })
-  unidadMedida?: string; // ✅ opcional
+  @ApiProperty({ example: 'UNI', description: 'Siempre será "UNI"' })
+  unidadMedida: string;
 }
 
 export class LiquidacionCompraInputDto {
@@ -79,4 +97,16 @@ export class LiquidacionCompraInputDto {
 
   @ApiProperty({ type: [DetalleLiquidacionDto] })
   detalles: DetalleLiquidacionDto[];
+}
+
+// DTO simplificado para la entrada del usuario
+export class LiquidacionCompraSimplificadaDto {
+  @ApiProperty({ type: InfoLiquidacionCompraDto })
+  infoLiquidacionCompra: InfoLiquidacionCompraDto;
+
+  @ApiProperty({ 
+    type: [DetalleSimplificadoDto],
+    description: 'Solo requiere: descripcion, cantidad, precioUnitario, descuento, valorImpuesto'
+  })
+  detalles: DetalleSimplificadoDto[];
 }
