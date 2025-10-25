@@ -8,6 +8,8 @@ import { GenerateLiquidacionCompraService } from './services/generate-liquidacio
 import { LiquidacionCompraController } from './controllers/liquidacion-compra.controller'
 import { ElectronicLiquidacionService } from './services/electronic-liquidacion.service'
 import { SignLiquidacionService } from './services/sign-liquidation.service'
+import { LiquidacionCalculationService } from './services/liquidacion-calculation.service'
+import { GenerarExcelLiquidacionesService } from './services/generar-excel-liquidaciones.service'
 
 
 @Module({
