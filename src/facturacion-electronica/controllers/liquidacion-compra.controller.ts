@@ -109,6 +109,50 @@ export class LiquidacionCompraController {
     }
   }
 
+  @Get('anuladas')
+  @ApiOperation({
+    summary: 'Obtener liquidaciones anuladas',
+    description:
+      'Obtiene solo las liquidaciones que han sido anuladas, incluyendo los metadatos de anulación (motivo, usuario, fecha)',
+  })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    type: Number,
+    description: 'Número de página',
+    example: 1,
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    type: Number,
+    description: 'Cantidad de resultados por página',
+    example: 10,
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Lista de liquidaciones anuladas obtenida correctamente',
+  })
+  async obtenerLiquidacionesAnuladas(
+    @Query('page', new DefaultValuePipe('1'), ParseIntPipe) page: number,
+    @Query('limit', new DefaultValuePipe('10'), ParseIntPipe) limit: number,
+  ) {
+    try {
+      this.logger.log(
+        `Obteniendo liquidaciones anuladas - página: ${page}, límite: ${limit}`,
+      )
+      return await this.service.listarLiquidacionesAnuladas(page, limit)
+    } catch (error) {
+      this.logger.error(
+        'Error al obtener liquidaciones anuladas:',
+        error.message,
+      )
+      throw new Error(
+        'Error al obtener liquidaciones anuladas: ' + error.message,
+      )
+    }
+  }
+
   @Get('descargar-excel')
   @ApiOperation({
     summary: 'Descargar Excel con liquidaciones de compra',
