@@ -384,4 +384,179 @@ export class ElectronicLiquidacionService {
 
     return liquidaciones
   }
+
+  /**
+   * Anular una liquidación de compra
+   * @param id - ID de la liquidación a anular
+   * @param motivoAnulacion - Motivo de la anulación
+   * @param usuarioAnulacion - Usuario que realiza la anulación (opcional)
+   * @returns Resultado de la operación
+   */
+  async anularLiquidacion(
+    id: number,
+    motivoAnulacion: string,
+    usuarioAnulacion?: string,
+  ) {
+    try {
+      // Verificar que la liquidación existe
+      const liquidacion = await this.prisma.liquidacionCompra.findUnique({
+        where: { id },
+        include: { emisor: true },
+      })
+
+      if (!liquidacion) {
+        return {
+          success: false,
+          message: `No se encontró la liquidación con ID ${id}`,
+        }
+      }
+
+      // Verificar que no esté ya anulada (revisando estadoSri)
+      if (liquidacion.estadoSri === 'ANULADO') {
+        return {
+          success: false,
+          message: 'Esta liquidación ya ha sido anulada previamente',
+          detalles: {
+            estadoActual: liquidacion.estadoSri,
+          },
+        }
+      }
+
+      // Validación: solo se pueden anular liquidaciones autorizadas
+      if (liquidacion.estadoSri !== 'AUTORIZADO') {
+        return {
+          success: false,
+          message: `No se puede anular una liquidación con estado "${liquidacion.estadoSri}". Solo se pueden anular liquidaciones autorizadas.`,
+        }
+      }
+
+      const fechaAnulacion = new Date()
+      const usuario = usuarioAnulacion || 'Sistema'
+
+      // Crear metadatos de anulación como comentario XML
+      const metadatosAnulacion = `\n<!-- ANULACION: {
+  "motivoAnulacion": "${motivoAnulacion.replace(/"/g, '\\"')}",
+  "usuarioAnulacion": "${usuario}",
+  "fechaAnulacion": "${fechaAnulacion.toISOString()}",
+  "estadoAnterior": "${liquidacion.estadoSri}"
+} -->`
+
+      // Actualizar XML con metadatos de anulación si existe
+      const xmlActualizado = liquidacion.xml
+        ? liquidacion.xml + metadatosAnulacion
+        : metadatosAnulacion
+
+      // Realizar la anulación actualizando solo estadoSri y xml
+      const liquidacionAnulada = await this.prisma.liquidacionCompra.update({
+        where: { id },
+        data: {
+          estadoSri: 'ANULADO',
+          xml: xmlActualizado,
+          updatedAt: fechaAnulacion,
+        },
+        include: {
+          emisor: {
+            select: {
+              ruc: true,
+              razonSocial: true,
+              estab: true,
+              ptoEmi: true,
+            },
+          },
+        },
+      })
+
+      this.logger.log(
+        `Liquidación ${id} anulada exitosamente. Motivo: ${motivoAnulacion}`,
+      )
+
+      return {
+        success: true,
+        message: 'Liquidación anulada exitosamente',
+        data: {
+          id: liquidacionAnulada.id,
+          accessKey: liquidacionAnulada.accessKey,
+          fechaEmision: liquidacionAnulada.fechaEmision,
+          razonSocialProveedor: liquidacionAnulada.razonSocialProveedor,
+          importeTotal: liquidacionAnulada.importeTotal,
+          estadoSri: liquidacionAnulada.estadoSri,
+          motivoAnulacion,
+          fechaAnulacion: fechaAnulacion.toISOString(),
+          usuarioAnulacion: usuario,
+        },
+      }
+    } catch (error: unknown) {
+      const msg = error instanceof Error ? error.message : 'Error desconocido'
+      this.logger.error(`Error al anular liquidación ${id}: ${msg}`)
+      return {
+        success: false,
+        message: `Error al anular liquidación: ${msg}`,
+      }
+    }
+  }
+
+  /**
+   * Obtener liquidación por ID con detalles completos
+   * Extrae información de anulación del XML si existe
+   */
+  async obtenerLiquidacionPorId(id: number) {
+    try {
+      const liquidacion = await this.prisma.liquidacionCompra.findUnique({
+        where: { id },
+        include: {
+          emisor: {
+            select: {
+              ruc: true,
+              razonSocial: true,
+              estab: true,
+              ptoEmi: true,
+            },
+          },
+          detalles: true,
+        },
+      })
+
+      if (!liquidacion) {
+        return {
+          success: false,
+          message: `No se encontró la liquidación con ID ${id}`,
+        }
+      }
+
+      // Extraer metadatos de anulación del XML si está anulada
+      let metadatosAnulacion = null
+      if (
+        liquidacion.estadoSri === 'ANULADO' &&
+        liquidacion.xml?.includes('<!-- ANULACION:')
+      ) {
+        try {
+          const match = liquidacion.xml.match(
+            /<!-- ANULACION: ({[\s\S]*?}) -->/,
+          )
+          if (match && match[1]) {
+            metadatosAnulacion = JSON.parse(match[1])
+          }
+        } catch (e) {
+          this.logger.warn(
+            `No se pudieron extraer metadatos de anulación para liquidación ${id}`,
+          )
+        }
+      }
+
+      return {
+        success: true,
+        data: {
+          ...liquidacion,
+          metadatosAnulacion,
+        },
+      }
+    } catch (error: unknown) {
+      const msg = error instanceof Error ? error.message : 'Error desconocido'
+      this.logger.error(`Error al obtener liquidación ${id}: ${msg}`)
+      return {
+        success: false,
+        message: `Error al obtener liquidación: ${msg}`,
+      }
+    }
+  }
 }
