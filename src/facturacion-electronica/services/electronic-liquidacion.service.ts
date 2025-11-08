@@ -363,12 +363,93 @@ export class ElectronicLiquidacionService {
         page: safePage,
         limit: safeLimit,
         totalPages: Math.ceil(total / safeLimit),
-        data: liquidaciones,
+        data: liquidacionesConAnulacion,
       }
     } catch (error: unknown) {
       const msg = error instanceof Error ? error.message : 'Error desconocido'
       this.logger.error('Error al listar liquidaciones: ' + msg)
       throw new Error('Error al listar liquidaciones: ' + msg)
+    }
+  }
+
+  /**
+   * Listar solo las liquidaciones anuladas con paginación
+   * @param page Número de página
+   * @param limit Cantidad de resultados por página
+   * @returns Lista paginada de liquidaciones anuladas con sus metadatos de anulación
+   */
+  async listarLiquidacionesAnuladas(page: number = 1, limit: number = 10) {
+    try {
+      const safePage = Math.max(1, page)
+      const safeLimit = Math.max(1, limit)
+      const skip = (safePage - 1) * safeLimit
+
+      // Filtrar solo las que tienen estadoSri = 'ANULADO'
+      const [total, liquidaciones] = await Promise.all([
+        this.prisma.liquidacionCompra.count({
+          where: { estadoSri: 'ANULADO' },
+        }),
+        this.prisma.liquidacionCompra.findMany({
+          where: { estadoSri: 'ANULADO' },
+          skip,
+          take: safeLimit,
+          orderBy: { updatedAt: 'desc' }, // Ordenar por fecha de actualización (anulación)
+          select: {
+            id: true,
+            fechaEmision: true,
+            razonSocialProveedor: true,
+            identificacionProveedor: true,
+            importeTotal: true,
+            estadoSri: true,
+            accessKey: true,
+            estab: true,
+            ptoEmi: true,
+            secuencial: true,
+            updatedAt: true,
+            xml: true, // Necesario para extraer metadatos
+          },
+        }),
+      ])
+
+      // Procesar para agregar información de anulación extraída del XML
+      const liquidacionesConMetadatos = liquidaciones.map((liq) => {
+        let metadatosAnulacion = null
+
+        // Extraer metadatos del XML
+        if (liq.xml?.includes('<!-- ANULACION:')) {
+          try {
+            const match = liq.xml.match(/<!-- ANULACION: ({[\s\S]*?}) -->/)
+            if (match && match[1]) {
+              metadatosAnulacion = JSON.parse(match[1])
+            }
+          } catch (e) {
+            this.logger.warn(
+              `No se pudieron extraer metadatos de anulación para liquidación ${liq.id}`,
+            )
+          }
+        }
+
+        // Retornar sin el XML completo (muy grande)
+        const { xml, ...liquidacionSinXml } = liq
+
+        return {
+          ...liquidacionSinXml,
+          anulado: true,
+          metadatosAnulacion,
+        }
+      })
+
+      return {
+        total,
+        page: safePage,
+        limit: safeLimit,
+        totalPages: Math.ceil(total / safeLimit),
+        data: liquidacionesConMetadatos,
+      }
+    } catch (error: unknown) {
+      const msg = error instanceof Error ? error.message : 'Error desconocido'
+      this.logger.error('Error al listar liquidaciones anuladas: ' + msg)
+      throw new Error('Error al listar liquidaciones anuladas: ' + msg)
     }
   }
 
