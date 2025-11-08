@@ -1,9 +1,17 @@
 FROM node:20-alpine AS deps
 WORKDIR /app
+
+ARG NPM_TOKEN
+ENV NPM_TOKEN=${NPM_TOKEN}
+
 ENV NPM_CONFIG_UPDATE_NOTIFIER=false NPM_CONFIG_FUND=false
 COPY package*.json ./
 COPY prisma/schema.prisma ./prisma/
-RUN npm ci && npx prisma generate
+
+RUN echo "@karen-mich:registry=https://npm.pkg.github.com" >> ~/.npmrc \
+  && echo "always-auth=true" >> ~/.npmrc \
+  && echo "//npm.pkg.github.com/:_authToken=${NPM_TOKEN}" >> ~/.npmrc \
+  && npm ci && npx prisma generate
 
 FROM node:20-alpine AS build
 WORKDIR /app
@@ -13,15 +21,23 @@ RUN npm run build
 
 FROM node:20-alpine AS prod-deps
 WORKDIR /app
+
+ARG NPM_TOKEN
+ENV NPM_TOKEN=${NPM_TOKEN}
+
 COPY package*.json ./
 COPY prisma ./prisma
-RUN npm ci --omit=dev && npx prisma generate
+
+RUN echo "@karen-mich:registry=https://npm.pkg.github.com" >> ~/.npmrc \
+  && echo "always-auth=true" >> ~/.npmrc \
+  && echo "//npm.pkg.github.com/:_authToken=${NPM_TOKEN}" >> ~/.npmrc \
+  && npm ci --omit=dev && npx prisma generate
 
 FROM node:20-alpine AS runner
 WORKDIR /app
 
 RUN addgroup -S nodegrp && adduser -S nodeusr -G nodegrp \
- && apk add --no-cache openssl
+  && apk add --no-cache openssl
 RUN chown -R nodeusr:nodegrp /app
 USER nodeusr
 

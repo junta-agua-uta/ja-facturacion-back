@@ -1,6 +1,7 @@
+import { signInvoiceXml } from '@karen-mich/sri-invoice-signer'
 import { Injectable } from '@nestjs/common'
 import { readFileSync, writeFileSync } from 'fs'
-import { signInvoiceXml } from 'ec-sri-invoice-signer'
+
 
 @Injectable()
 export class SignInvoiceService {
