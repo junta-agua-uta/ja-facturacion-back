@@ -343,9 +343,20 @@ export class ElectronicLiquidacionService {
             identificacionProveedor: true,
             importeTotal: true,
             estadoSri: true,
+            accessKey: true,
+            estab: true,
+            ptoEmi: true,
+            secuencial: true,
+            updatedAt: true,
           },
         }),
       ])
+
+      // Procesar para agregar información de anulación
+      const liquidacionesConAnulacion = liquidaciones.map((liq) => ({
+        ...liq,
+        anulado: liq.estadoSri === 'ANULADO',
+      }))
 
       return {
         total,
