@@ -16,7 +16,7 @@ Incluye integración con el **SRI (Ecuador)** para el envío y autorización de 
 
 ## Configuración de GitHub Packages
 Este proyecto utiliza paquetes alojados en GitHub Packages. Es necesario autenticarse para poder instalar las dependencias.
-1. Inicia sesión en GitHub
+1. Inicia sesión en GitHub.
 
 2. Ve a: https://github.com/settings/tokens/new
 
