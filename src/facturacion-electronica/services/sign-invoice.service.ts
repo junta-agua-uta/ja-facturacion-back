@@ -1,4 +1,4 @@
-import { signInvoiceXml } from '@karen-mich/sri-invoice-signer'
+import { signInvoiceXml } from '@junta-agua-uta/sri-invoice-signer'
 import { Injectable } from '@nestjs/common'
 import { readFileSync, writeFileSync } from 'fs'
 

@@ -1,4 +1,4 @@
-import { signLiquidacionCompraXml } from '@karen-mich/sri-invoice-signer';
+import { signLiquidacionCompraXml } from '@junta-agua-uta/sri-invoice-signer';
 import { Injectable, Logger } from '@nestjs/common';
 import { readFileSync, writeFileSync } from 'fs';
 
