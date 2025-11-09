@@ -14,6 +14,41 @@ Incluye integración con el **SRI (Ecuador)** para el envío y autorización de 
 
 ---
 
+## Configuración de GitHub Packages
+Este proyecto utiliza paquetes alojados en GitHub Packages. Es necesario autenticarse para poder instalar las dependencias.
+1. Inicia sesión en GitHub
+
+2. Ve a: https://github.com/settings/tokens/new
+
+3. Configura el token:
+   - **Note:** `Acceso a paquetes junta-agua-uta`
+   - **Expiration:** Configura según tus necesidades
+   - **Permisos:** Marca `read:packages`
+
+4. Haz clic en **Generate token** al final de la página y cópialo.
+
+5. Ejecuta el siguiente comando en tu terminal:
+   ```bash
+   npm login --scope=@junta-agua-uta --auth-type=legacy --registry=https://npm.pkg.github.com
+   ```
+
+6. Ingresa la información solicitada:
+   - **Username:** Tu usuario de GitHub
+   - **Password:** El token que copiaste en el paso 4
+   - **Email:** Tu email público de GitHub
+
+7. Verifica que la autenticación fue exitosa. Deberías ver:
+   ```
+   Logged in to scope @junta-agua-uta on https://npm.pkg.github.com/
+   ```
+
+8. Instala las dependencias normalmente:
+   ```bash
+   npm install
+   ```
+
+---
+
 ## Instalación
 
 1. **Clona el repositorio e instala las dependencias:**
