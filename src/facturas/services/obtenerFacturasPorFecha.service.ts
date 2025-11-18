@@ -74,9 +74,6 @@ export class ObtenerFacturaPorFechaService {
       this.prisma.fACTURAS.count({
         where: {
           ...dateFilter,
-          NOT: {
-            ID_USUARIO: 6,
-          },
         },
       }),
     ])
@@ -126,9 +123,6 @@ export class ObtenerFacturaPorFechaService {
     return this.prisma.fACTURAS.findMany({
       where: {
         ...dateFilter,
-        NOT: {
-          ID_USUARIO: 6,
-        },
       },
       include: {
         cliente: true,

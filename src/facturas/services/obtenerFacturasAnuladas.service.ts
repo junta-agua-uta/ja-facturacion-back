@@ -11,7 +11,7 @@ export class ObtenerFacturasAnuladasService {
    * Listar solo las facturas anuladas con paginación
    * @param page Número de página
    * @param limit Cantidad de resultados por página
-   * @returns Lista paginada de facturas anuladas con sus metadatos de anulación
+   * @returns Lista paginada de facturas anuladas
    */
   async obtenerFacturasAnuladas(page: number = 1, limit: number = 10) {
     try {
