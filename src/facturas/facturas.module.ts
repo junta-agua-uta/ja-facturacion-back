@@ -7,6 +7,8 @@ import { AgregarFacturaService } from './services/agregarFactura.service'
 import { FacturacionModule } from 'src/facturacion-electronica/facturacion.module'
 import { ObtenerFacturaPorFechaService } from './services/obtenerFacturasPorFecha.service'
 import { GenerarExelService } from './services/generar-exel.service'
+import { AnularFacturaService } from './services/anularFactura.service'
+import { ObtenerFacturasAnuladasService } from './services/obtenerFacturasAnuladas.service'
 
 @Module({
   imports: [FacturacionModule],
@@ -18,6 +20,8 @@ import { GenerarExelService } from './services/generar-exel.service'
     AgregarFacturaService,
     ObtenerFacturaPorFechaService,
     GenerarExelService,
+    AnularFacturaService,
+    ObtenerFacturasAnuladasService,
   ],
 })
 export class FacturasModule {}
