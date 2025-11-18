@@ -53,18 +53,14 @@ export class ObtenerFacturasAnuladasService {
         }),
       ])
 
-      // Procesar para agregar flag de anulación
-      const facturasConMetadatos = facturas.map((factura) => ({
-        ...factura,
-        anulado: true,
-      }))
+      // Retornar las facturas anuladas directamente
 
       return {
         total,
         page: safePage,
         limit: safeLimit,
         totalPages: Math.ceil(total / safeLimit),
-        data: facturasConMetadatos,
+        data: facturas,
       }
     } catch (error: unknown) {
       const msg = error instanceof Error ? error.message : 'Error desconocido'
