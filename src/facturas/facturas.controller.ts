@@ -7,21 +7,22 @@ import {
   Logger,
   ParseIntPipe,
   Query,
-  UseGuards,
   DefaultValuePipe,
   Param,
   Res,
+  Patch,
 } from '@nestjs/common'
 import { ObtenerFacturaPorIdService } from './services/obtenerFacturaPorId.service'
 import { ObtenerFacturaPorCedulaService } from './services/obtenerFacturaPorCedula.service'
 import { ObtenerTodasLasFacturasService } from './services/obtenerTodasLasFacturas.service'
-import { ApiBearerAuth, ApiTags, ApiOperation, ApiQuery } from '@nestjs/swagger'
-import { AuthGuard } from 'src/auth/guards/auth.guard'
+import { ApiTags, ApiOperation, ApiQuery, ApiResponse } from '@nestjs/swagger'
 import { CrearFacturaDto } from './dtos/crearFactura.dto'
 import { AgregarFacturaService } from './services/agregarFactura.service'
 import { BuscarFacturasPorFechaDto } from './dtos/buscarFacturaFecha.dto'
 import { ObtenerFacturaPorFechaService } from './services/obtenerFacturasPorFecha.service'
 import { GenerarExelService } from './services/generar-exel.service'
+import { AnularFacturaService } from './services/anularFactura.service'
+import { ObtenerFacturasAnuladasService } from './services/obtenerFacturasAnuladas.service'
 import { Response } from 'express'
 
 @ApiTags('Facturas')
@@ -36,6 +37,8 @@ export class FacturasController {
     private readonly agregarFacturaService: AgregarFacturaService,
     private readonly obtenerFacturasPorFechaService: ObtenerFacturaPorFechaService,
     private readonly generarExelService: GenerarExelService,
+    private readonly anularFacturaService: AnularFacturaService,
+    private readonly obtenerFacturasAnuladasService: ObtenerFacturasAnuladasService,
   ) {}
 
   @ApiOperation({
@@ -228,6 +231,76 @@ export class FacturasController {
     } catch (error) {
       Logger.error('Error al generar reporte de facturas:', error.message)
       throw new Error('Error al generar reporte de facturas: ' + error.message)
+    }
+  }
+
+  @Get('anuladas')
+  @ApiOperation({
+    summary: 'Obtener facturas anuladas',
+    description: 'Obtiene solo las facturas que han sido anuladas',
+  })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    type: Number,
+    description: 'Número de página',
+    example: 1,
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    type: Number,
+    description: 'Cantidad de resultados por página',
+    example: 10,
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Lista de facturas anuladas obtenida correctamente',
+  })
+  async obtenerFacturasAnuladas(
+    @Query('page', new DefaultValuePipe('1'), ParseIntPipe) page: number,
+    @Query('limit', new DefaultValuePipe('10'), ParseIntPipe) limit: number,
+  ) {
+    try {
+      Logger.log(
+        `Obteniendo facturas anuladas - página: ${page}, límite: ${limit}`,
+      )
+      return await this.obtenerFacturasAnuladasService.obtenerFacturasAnuladas(
+        page,
+        limit,
+      )
+    } catch (error) {
+      Logger.error('Error al obtener facturas anuladas:', error.message)
+      throw new Error('Error al obtener facturas anuladas: ' + error.message)
+    }
+  }
+
+  @Patch(':id/anular')
+  @ApiOperation({
+    summary: 'Anular factura',
+    description:
+      'Anula una factura previamente autorizada. La factura debe estar en estado AUTORIZADO para poder ser anulada.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Factura anulada exitosamente',
+  })
+  @ApiResponse({
+    status: 400,
+    description:
+      'La factura no puede ser anulada (ya está anulada o no está autorizada)',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Factura no encontrada',
+  })
+  async anularFactura(@Param('id', ParseIntPipe) id: number) {
+    try {
+      Logger.log(`Anulando factura ${id}`)
+      return await this.anularFacturaService.anularFactura(id)
+    } catch (error) {
+      Logger.error(`Error al anular factura ${id}:`, error.message)
+      throw new Error(`Error al anular factura: ${error.message}`)
     }
   }
 }

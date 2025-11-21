@@ -17,11 +17,6 @@ export class ObtenerTodasLasFacturasService {
       this.prisma.fACTURAS.findMany({
         skip: offset,
         take: limit,
-        where: {
-          NOT: {
-            ID_USUARIO: 6,
-          },
-        },
         include: {
           cliente: true,
           usuario: true,
@@ -31,13 +26,7 @@ export class ObtenerTodasLasFacturasService {
           ID: 'desc',
         },
       }),
-      this.prisma.fACTURAS.count({
-        where: {
-          NOT: {
-            ID_USUARIO: 6,
-          },
-        },
-      }),
+      this.prisma.fACTURAS.count(),
     ])
 
     const totalPages = Math.ceil(totalItems / limit)
@@ -52,11 +41,6 @@ export class ObtenerTodasLasFacturasService {
 
   async obtenerTodasSinPaginacion() {
     return this.prisma.fACTURAS.findMany({
-      where: {
-        NOT: {
-          ID_USUARIO: 6,
-        },
-      },
       include: {
         cliente: true,
         usuario: true,
