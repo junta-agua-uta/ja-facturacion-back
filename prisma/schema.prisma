@@ -206,7 +206,7 @@ model LiquidacionCompra {
   secuencial     Int     @default(0)
   emailProveedor String?
 
-  xml       String?              @db.LongText
+  xml       String?              @db.Text
   accessKey String?              @unique
   estadoSri String?
   createdAt DateTime             @default(now())
