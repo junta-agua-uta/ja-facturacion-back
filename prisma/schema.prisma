@@ -213,7 +213,7 @@ model LiquidacionCompra {
   updatedAt DateTime             @updatedAt
   detalles  DetalleLiquidacion[]
 
-  // AGREGAR ESTA RELACIÓN
+  // RELACIÓN CON EMISOR
   emisorId Int
   emisor   Emisor @relation(fields: [emisorId], references: [id], onDelete: Cascade)
 
