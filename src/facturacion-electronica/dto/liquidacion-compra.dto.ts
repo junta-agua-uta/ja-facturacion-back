@@ -110,3 +110,18 @@ export class LiquidacionCompraSimplificadaDto {
   })
   detalles: DetalleSimplificadoDto[];
 }
+
+// DTO para anular liquidación de compra
+export class AnularLiquidacionDto {
+  @ApiProperty({ 
+    example: 'Documento emitido por error',
+    description: 'Motivo de la anulación de la liquidación de compra'
+  })
+  motivoAnulacion: string;
+
+  @ApiPropertyOptional({ 
+    example: 'admin@empresa.com',
+    description: 'Usuario que realiza la anulación (opcional, se puede obtener del token)'
+  })
+  usuarioAnulacion?: string;
+}

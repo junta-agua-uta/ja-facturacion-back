@@ -4,7 +4,7 @@ import { IsEcuadorianIdentityCard } from 'src/common/decorators/ecuadorian-id.de
 
 export class LoginUserDto {
   @ApiProperty({
-    description: 'Cedula del usuario(es requerido)',
+    description: 'Cédula del usuario(es requerido)',
     example: '1812345678',
   })
   @IsEcuadorianIdentityCard()
