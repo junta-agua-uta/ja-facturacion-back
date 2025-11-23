@@ -4,7 +4,7 @@ generator client {
 }
 
 datasource db {
-  provider = "mysql"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
@@ -179,7 +179,7 @@ model CONCEPTOS {
   PRECIO_BASE    Decimal?  @db.Decimal(10, 2)
   REQUIERE_MES   Boolean   @default(false)
   ESTADO         Boolean   @default(true)
-  FECHA_CREACION DateTime? @default(now()) @db.DateTime(0)
+  FECHA_CREACION DateTime? @default(now()) @db.Timestamp
 
   @@map("conceptos")
 }
@@ -195,7 +195,7 @@ model LiquidacionCompra {
   totalDescuento              Float
   importeTotal                Float
   moneda                      String
-  xml                         String?              @db.LongText
+  xml                         String?              @db.Text
   accessKey                   String?
   estadoSri                   String?
   createdAt                   DateTime             @default(now())

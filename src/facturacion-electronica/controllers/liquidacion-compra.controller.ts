@@ -165,4 +165,66 @@ export class LiquidacionCompraController {
       )
     }
   }
+
+  @Get('descargar-excel-no-anulados')
+  @ApiOperation({
+    summary: 'Descargar Excel con liquidaciones NO ANULADAS',
+    description:
+      'Genera y descarga un archivo Excel solo con las liquidaciones de compra que NO están anuladas',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Archivo Excel generado correctamente',
+    headers: {
+      'Content-Type': {
+        description: 'Tipo de contenido del archivo',
+        schema: {
+          type: 'string',
+          example:
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        },
+      },
+      'Content-Disposition': {
+        description: 'Disposición del contenido como archivo adjunto',
+        schema: {
+          type: 'string',
+          example: 'attachment; filename=liquidaciones-no-anuladas.xlsx',
+        },
+      },
+    },
+  })
+  async descargarExcelLiquidacionesNoAnuladas(@Res() response: Response) {
+    try {
+      this.logger.log(
+        'Generando reporte Excel de liquidaciones NO ANULADAS',
+      )
+
+      // Obtener solo liquidaciones no anuladas
+      const liquidaciones =
+        await this.service.obtenerLiquidacionesNoAnuladasParaExcel()
+
+      this.logger.log(
+        `Obtenidas ${liquidaciones.length} liquidaciones NO ANULADAS para Excel`,
+      )
+
+      // Generar y enviar el archivo Excel
+      await this.excelService.generarReporteLiquidaciones(
+        response,
+        liquidaciones,
+      )
+
+      this.logger.log(
+        `Excel generado con ${liquidaciones.length} liquidaciones NO ANULADAS`,
+      )
+    } catch (error) {
+      this.logger.error(
+        'Error al generar Excel de liquidaciones no anuladas:',
+        error.message,
+      )
+      throw new Error(
+        'Error al generar Excel de liquidaciones no anuladas: ' +
+          error.message,
+      )
+    }
+  }
 }

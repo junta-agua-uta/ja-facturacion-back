@@ -271,4 +271,45 @@ export class ElectronicLiquidacionService {
       throw new Error('Error al obtener liquidaciones para Excel: ' + msg)
     }
   }
+
+  async obtenerLiquidacionesNoAnuladasParaExcel() {
+    try {
+      this.logger.log(
+        'Iniciando consulta para obtener liquidaciones NO ANULADAS para Excel',
+      )
+
+      const liquidaciones = await this.prisma.liquidacionCompra.findMany({
+        where: {
+          estadoSri: {
+            not: 'ANULADO',
+          },
+        },
+        orderBy: { fechaEmision: 'desc' },
+        select: {
+          id: true,
+          fechaEmision: true,
+          dirEstablecimiento: true,
+          tipoIdentificacionProveedor: true,
+          razonSocialProveedor: true,
+          identificacionProveedor: true,
+          totalSinImpuestos: true,
+          totalDescuento: true,
+          importeTotal: true,
+          moneda: true,
+          estadoSri: true,
+          accessKey: true,
+          createdAt: true,
+        },
+      })
+
+      this.logger.log(
+        `Encontradas ${liquidaciones.length} liquidaciones NO ANULADAS para Excel`,
+      )
+      return liquidaciones
+    } catch (error: unknown) {
+      const msg = error instanceof Error ? error.message : 'Error desconocido'
+      this.logger.error('Error al obtener liquidaciones no anuladas para Excel: ' + msg)
+      throw new Error('Error al obtener liquidaciones no anuladas para Excel: ' + msg)
+    }
+  }
 }
