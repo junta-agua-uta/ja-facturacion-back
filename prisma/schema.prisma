@@ -4,7 +4,7 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "mysql"
   url      = env("DATABASE_URL")
 }
 
@@ -183,7 +183,7 @@ model CONCEPTOS {
   PRECIO_BASE    Decimal?  @db.Decimal(10, 2)
   REQUIERE_MES   Boolean   @default(false)
   ESTADO         Boolean   @default(true)
-  FECHA_CREACION DateTime? @default(now()) @db.Timestamp
+  FECHA_CREACION DateTime? @default(now()) @db.DateTime(0)
 
   @@map("conceptos")
 
@@ -206,14 +206,14 @@ model LiquidacionCompra {
   secuencial     Int     @default(0)
   emailProveedor String?
 
-  xml       String?              @db.Text
+  xml       String?              @db.LongText
   accessKey String?              @unique
   estadoSri String?
   createdAt DateTime             @default(now())
   updatedAt DateTime             @updatedAt
   detalles  DetalleLiquidacion[]
 
-  // RELACIÓN CON EMISOR
+  // AGREGAR ESTA RELACIÓN
   emisorId Int
   emisor   Emisor @relation(fields: [emisorId], references: [id], onDelete: Cascade)
 
