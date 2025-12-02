@@ -51,9 +51,6 @@ export class ObtenerFacturaPorFechaService {
       this.prisma.fACTURAS.findMany({
         where: {
           ...dateFilter,
-          NOT: {
-            ID_USUARIO: 6,
-          },
         },
         skip: offset,
         take: limitNum,
