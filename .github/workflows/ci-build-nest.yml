@@ -2,7 +2,7 @@ name: CI - Build NestJS
 
 on:
   pull_request:
-    branches: [ main, develop ]
+    branches: [main, develop]
     types: [opened, synchronize, reopened, ready_for_review]
 
 concurrency:
@@ -24,6 +24,8 @@ jobs:
 
       - name: Install deps
         run: npm ci
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Prisma generate
         run: npx prisma generate

@@ -10,10 +10,10 @@ datasource db {
 
 model USUARIOS {
   ID             Int        @id @default(autoincrement())
-  CEDULA         String     @unique
+  CEDULA         String     @unique(map: "usuarios_CEDULA_key")
   NOMBRE         String
   APELLIDO       String
-  CORREO         String     @unique
+  CORREO         String     @unique(map: "usuarios_CORREO_key")
   HASH           String
   SALT           String
   ROL            ROL        @default(CONTADOR)
@@ -22,11 +22,12 @@ model USUARIOS {
   FACTURAS       FACTURAS[]
 
   @@map("usuarios")
+
 }
 
 model CLIENTES {
   ID               Int         @id @default(autoincrement())
-  IDENTIFICACION   String      @unique
+  IDENTIFICACION   String      @unique(map: "clientes_IDENTIFICACION_key")
   RAZON_SOCIAL     String
   NOMBRE_COMERCIAL String?
   DIRECCION        String
@@ -48,6 +49,7 @@ model CLIENTES {
   MEDIDORES        MEDIDORES[]
 
   @@map("clientes")
+
 }
 
 model CUENTAS {
@@ -78,7 +80,7 @@ model ABONOS {
 
 model MEDIDORES {
   ID               Int                @id @default(autoincrement())
-  NUMERO_MEDIDOR   String             @unique
+  NUMERO_MEDIDOR   String             @unique(map: "medidores_NUMERO_MEDIDOR_key")
   MODELO           String?
   MARCA            String?
   UBICACION        String?
@@ -111,6 +113,7 @@ model SUCURSALES {
   FACTURAS      FACTURAS[]
 
   @@map("sucursales")
+
 }
 
 model RAZONES {
@@ -123,6 +126,7 @@ model RAZONES {
   DETALLES_FACTURA DETALLES_FACTURA[]
 
   @@map("razones")
+
 }
 
 model FACTURAS {
@@ -182,10 +186,11 @@ model CONCEPTOS {
   FECHA_CREACION DateTime? @default(now()) @db.DateTime(0)
 
   @@map("conceptos")
+
 }
 
 model LiquidacionCompra {
-  id                          Int                  @id @default(autoincrement())
+  id                          Int    @id @default(autoincrement())
   fechaEmision                String
   dirEstablecimiento          String
   tipoIdentificacionProveedor String
@@ -195,12 +200,22 @@ model LiquidacionCompra {
   totalDescuento              Float
   importeTotal                Float
   moneda                      String
-  xml                         String?              @db.LongText
-  accessKey                   String?
-  estadoSri                   String?
-  createdAt                   DateTime             @default(now())
-  updatedAt                   DateTime             @updatedAt
-  detalles                    DetalleLiquidacion[]
+
+  estab          String  @default("001") @db.VarChar(3)
+  ptoEmi         String  @default("300") @db.VarChar(3)
+  secuencial     Int     @default(0)
+  emailProveedor String?
+
+  xml       String?              @db.LongText
+  accessKey String?              @unique
+  estadoSri String?
+  createdAt DateTime             @default(now())
+  updatedAt DateTime             @updatedAt
+  detalles  DetalleLiquidacion[]
+
+  // AGREGAR ESTA RELACIÓN
+  emisorId Int
+  emisor   Emisor @relation(fields: [emisorId], references: [id], onDelete: Cascade)
 
   @@map("liquidacion_compra")
 }
@@ -235,6 +250,7 @@ enum ESTADO_FACTURA {
   AUTORIZADO
   ELIMINADO
   SIN_AUTORIZAR
+  ANULADO
 }
 
 enum TIPO_PAGO {
@@ -242,4 +258,37 @@ enum TIPO_PAGO {
   CREDITO
   DEPOSITO
   CHEQUE
+}
+
+model Emisor {
+  id                    Int      @id @default(autoincrement())
+  ruc                   String   @unique
+  razonSocial           String
+  nombreComercial       String?
+  dirMatriz             String
+  estab                 String   @db.VarChar(3)
+  ptoEmi                String   @db.VarChar(3)
+  obligadoContabilidad  String   @default("SI")
+  contribuyenteEspecial String?
+  ambiente              String   @default("1")
+  activo                Boolean  @default(true)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  // AGREGAR ESTA RELACIÓN
+  liquidacionesCompra LiquidacionCompra[]
+
+  @@map("emisor")
+}
+
+model SecuencialDoc {
+  id        Int      @id @default(autoincrement())
+  codDoc    String   @db.VarChar(2) // '03'
+  estab     String   @db.VarChar(3)
+  ptoEmi    String   @db.VarChar(3)
+  lastSeq   Int      @default(0)
+  updatedAt DateTime @updatedAt
+
+  @@unique([codDoc, estab, ptoEmi], name: "uniq_doc_serie")
+  @@map("secuencial_doc")
 }

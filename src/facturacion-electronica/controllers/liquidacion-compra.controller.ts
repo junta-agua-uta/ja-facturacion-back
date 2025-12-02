@@ -9,12 +9,14 @@ import {
   ParseIntPipe,
   Query,
   Res,
+  Patch,
 } from '@nestjs/common'
 import { ApiTags, ApiOperation, ApiResponse, ApiQuery } from '@nestjs/swagger'
 import { Response } from 'express'
 import {
   LiquidacionCompraInputDto,
   LiquidacionCompraSimplificadaDto,
+  AnularLiquidacionDto,
 } from '../dto/liquidacion-compra.dto'
 import { ElectronicLiquidacionService } from '../services/electronic-liquidacion.service'
 import { LiquidacionCalculationService } from '../services/liquidacion-calculation.service'
@@ -107,6 +109,50 @@ export class LiquidacionCompraController {
     }
   }
 
+  @Get('anuladas')
+  @ApiOperation({
+    summary: 'Obtener liquidaciones anuladas',
+    description:
+      'Obtiene solo las liquidaciones que han sido anuladas, incluyendo los metadatos de anulación (motivo, usuario, fecha)',
+  })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    type: Number,
+    description: 'Número de página',
+    example: 1,
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    type: Number,
+    description: 'Cantidad de resultados por página',
+    example: 10,
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Lista de liquidaciones anuladas obtenida correctamente',
+  })
+  async obtenerLiquidacionesAnuladas(
+    @Query('page', new DefaultValuePipe('1'), ParseIntPipe) page: number,
+    @Query('limit', new DefaultValuePipe('10'), ParseIntPipe) limit: number,
+  ) {
+    try {
+      this.logger.log(
+        `Obteniendo liquidaciones anuladas - página: ${page}, límite: ${limit}`,
+      )
+      return await this.service.listarLiquidacionesAnuladas(page, limit)
+    } catch (error) {
+      this.logger.error(
+        'Error al obtener liquidaciones anuladas:',
+        error.message,
+      )
+      throw new Error(
+        'Error al obtener liquidaciones anuladas: ' + error.message,
+      )
+    }
+  }
+
   @Get('descargar-excel')
   @ApiOperation({
     summary: 'Descargar Excel con liquidaciones de compra',
@@ -116,23 +162,6 @@ export class LiquidacionCompraController {
   @ApiResponse({
     status: 200,
     description: 'Archivo Excel generado correctamente',
-    headers: {
-      'Content-Type': {
-        description: 'Tipo de contenido del archivo',
-        schema: {
-          type: 'string',
-          example:
-            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        },
-      },
-      'Content-Disposition': {
-        description: 'Disposición del contenido como archivo adjunto',
-        schema: {
-          type: 'string',
-          example: 'attachment; filename=liquidaciones-compra.xlsx',
-        },
-      },
-    },
   })
   async descargarExcelLiquidaciones(@Res() response: Response) {
     try {
@@ -163,6 +192,110 @@ export class LiquidacionCompraController {
       throw new Error(
         'Error al generar Excel de liquidaciones: ' + error.message,
       )
+    }
+  }
+
+  @Get('descargar-excel-no-anulados')
+  @ApiOperation({
+    summary: 'Descargar Excel con liquidaciones NO ANULADAS',
+    description:
+      'Genera y descarga un archivo Excel solo con las liquidaciones de compra que NO están anuladas',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Archivo Excel generado correctamente',
+  })
+  async descargarExcelLiquidacionesNoAnuladas(@Res() response: Response) {
+    try {
+      this.logger.log(
+        'Generando reporte Excel de liquidaciones NO ANULADAS',
+      )
+      const liquidaciones =
+        await this.service.obtenerLiquidacionesNoAnuladasParaExcel()
+      this.logger.log(
+        `Obtenidas ${liquidaciones.length} liquidaciones NO ANULADAS para Excel`,
+      )
+      await this.excelService.generarReporteLiquidaciones(
+        response,
+        liquidaciones,
+      )
+      this.logger.log(
+        `Excel generado con ${liquidaciones.length} liquidaciones NO ANULADAS`,
+      )
+    } catch (error) {
+      this.logger.error(
+        'Error al generar Excel de liquidaciones no anuladas:',
+        error.message,
+      )
+      throw new Error(
+        'Error al generar Excel de liquidaciones no anuladas: ' +
+          error.message,
+      )
+    }
+  }
+
+  @Get(':id')
+  @ApiOperation({
+    summary: 'Obtener liquidación por ID',
+    description: 'Obtiene una liquidación de compra específica con todos sus detalles',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Liquidación obtenida correctamente',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Liquidación no encontrada',
+  })
+  async obtenerLiquidacionPorId(@Param('id', ParseIntPipe) id: number) {
+    try {
+      this.logger.log(`Obteniendo liquidación con ID: ${id}`)
+      return await this.service.obtenerLiquidacionPorId(id)
+    } catch (error) {
+      this.logger.error(
+        `Error al obtener liquidación ${id}:`,
+        error.message,
+      )
+      throw new Error(`Error al obtener liquidación: ${error.message}`)
+    }
+  }
+
+  @Patch(':id/anular')
+  @ApiOperation({
+    summary: 'Anular liquidación de compra',
+    description: 'Anula una liquidación de compra previamente autorizada. La liquidación debe estar en estado AUTORIZADO para poder ser anulada. El motivo de anulación se guarda en los metadatos del XML.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Liquidación anulada exitosamente',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'La liquidación no puede ser anulada (ya está anulada o no está autorizada)',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Liquidación no encontrada',
+  })
+  async anularLiquidacion(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: AnularLiquidacionDto,
+  ) {
+    try {
+      this.logger.log(
+        `Anulando liquidación ${id}. Motivo: ${dto.motivoAnulacion}`,
+      )
+      return await this.service.anularLiquidacion(
+        id,
+        dto.motivoAnulacion,
+        dto.usuarioAnulacion,
+      )
+    } catch (error) {
+      this.logger.error(
+        `Error al anular liquidación ${id}:`,
+        error.message,
+      )
+      throw new Error(`Error al anular liquidación: ${error.message}`)
     }
   }
 }
