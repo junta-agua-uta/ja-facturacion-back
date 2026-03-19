@@ -117,7 +117,7 @@ export class GenerateInvoiceService {
     return response
   }
 
-  async documentAuthorization(
+  private async documentAuthorization(
     accessKey: string,
     authorizationUrl: string,
   ): Promise<SRIResponseDto> {
@@ -141,7 +141,28 @@ export class GenerateInvoiceService {
         )
       })
     })
-
     return response
+  }
+
+  async documentAuthorizationWithRetries(
+    accessKey: string,
+    authorizationUrl: string,
+    retries = 5,
+    delayMs = 3000,
+  ) {
+    for (let i = 0; i < retries; i++) {
+      const auth: SRIResponseDto = await this.documentAuthorization(
+        accessKey,
+        authorizationUrl,
+      )
+      const autorizacion =
+        auth?.RespuestaAutorizacionComprobante?.autorizaciones?.autorizacion
+      if (autorizacion?.estado === 'AUTORIZADO') {
+        return auth
+      }
+      await new Promise((res) => setTimeout(res, delayMs))
+    }
+
+    return null
   }
 }
