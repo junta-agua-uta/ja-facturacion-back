@@ -85,7 +85,7 @@ export class ElectronicInvoiceService {
       Logger.log('XML firmado correctamente.')
 
       /** 4) Enviar a recepción del SRI */
-      Logger.log('Enviando a recepción del SRI...')
+      Logger.log('Enviando a recepción del SRI papu...')
       const reception: SRIAuthorizationDto =
         await this.invoiceService.documentReception(
           signedInvoice,
@@ -108,13 +108,24 @@ export class ElectronicInvoiceService {
       Logger.log('Recepción exitosa.')
 
       /** 5) Consultar autorización del SRI */
-      Logger.log('Consultando autorización del SRI...')
-      const authorization: SRIResponseDto =
-        await this.invoiceService.documentAuthorization(
+      Logger.log('Consultando autorización mamu del SRI...')
+      const authorization =
+        await this.invoiceService.documentAuthorizationWithRetries(
           accessKey,
           this.sriAuthorizationUrl,
         )
-      Logger.log(authorization)
+      Logger.log('SKIBIDI PAPU', authorization)
+      if (!authorization) {
+        return {
+          message: 'Autorización pendiente',
+          pending: true,
+        }
+      }
+      Logger.log(
+        'RESPUESTA COMPLETA SRI:',
+        JSON.stringify(authorization, null, 2),
+      )
+      // NO modificable, no debes toccar nada que este debajo de este comentario
       const autorizacion =
         authorization?.RespuestaAutorizacionComprobante?.autorizaciones
           ?.autorizacion
@@ -189,7 +200,7 @@ export class ElectronicInvoiceService {
     try {
       Logger.log('Consultando autorización del SRI...')
       const authorization: SRIResponseDto =
-        await this.invoiceService.documentAuthorization(
+        await this.invoiceService.documentAuthorizationWithRetries(
           accessKey,
           this.sriAuthorizationUrl,
         )

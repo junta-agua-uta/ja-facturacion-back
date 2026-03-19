@@ -32,7 +32,7 @@ export class ElectronicLiquidacionService {
     const prov = parseInt(ec.substring(0, 2), 10)
     if (prov < 1 || prov > 24) return false
     const d = ec.split('').map(Number)
-    const verificador = d.pop()!
+    const verificador = d.pop()
     let suma = 0
     d.forEach((n, i) => {
       let v = n
@@ -249,7 +249,7 @@ export class ElectronicLiquidacionService {
 
       this.logger.log('Recepción exitosa, consultando autorización...')
       const authorization: SRIResponseDto =
-        await this.invoiceService.documentAuthorization(
+        await this.invoiceService.documentAuthorizationWithRetries(
           accessKey,
           this.sriAuthorizationUrl,
         )
@@ -292,7 +292,7 @@ export class ElectronicLiquidacionService {
   async autorizarPorClave(accessKey: string) {
     try {
       const authorization: SRIResponseDto =
-        await this.invoiceService.documentAuthorization(
+        await this.invoiceService.documentAuthorizationWithRetries(
           accessKey,
           this.sriAuthorizationUrl,
         )
@@ -688,8 +688,12 @@ export class ElectronicLiquidacionService {
       return liquidaciones
     } catch (error: unknown) {
       const msg = error instanceof Error ? error.message : 'Error desconocido'
-      this.logger.error('Error al obtener liquidaciones no anuladas para Excel: ' + msg)
-      throw new Error('Error al obtener liquidaciones no anuladas para Excel: ' + msg)
+      this.logger.error(
+        'Error al obtener liquidaciones no anuladas para Excel: ' + msg,
+      )
+      throw new Error(
+        'Error al obtener liquidaciones no anuladas para Excel: ' + msg,
+      )
     }
   }
 }
