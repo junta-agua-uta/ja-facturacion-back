@@ -157,7 +157,7 @@ export class GenerateInvoiceService {
       )
       const autorizacion =
         auth?.RespuestaAutorizacionComprobante?.autorizaciones?.autorizacion
-      if (autorizacion.estado === 'AUTORIZADO') {
+      if (autorizacion?.estado === 'AUTORIZADO') {
         return auth
       }
       await new Promise((res) => setTimeout(res, delayMs))
