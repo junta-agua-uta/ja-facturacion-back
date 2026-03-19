@@ -95,6 +95,14 @@ export class AgregarFacturaService {
         facturaElectronica.xml,
         accessKey,
       )
+      if (response.pending) {
+        await this.prisma.fACTURAS.update({
+          where: { ID: facturaCreada.ID },
+          data: {
+            ESTADO_FACTURA: 'SIN_AUTORIZAR',
+          },
+        })
+      }
       Logger.log('Respuesta final: ' + response.message)
       if (
         response.message ==
@@ -161,7 +169,12 @@ export class AgregarFacturaService {
         dirMatriz: 'Ambato',
       },
       infoFactura: {
-        fechaEmision: facturaCreada.FECHA_EMISION.toLocaleDateString('es-ES'),
+        fechaEmision: facturaCreada.FECHA_EMISION.toLocaleDateString('es-ES', {
+          timeZone: 'America/Guayaquil',
+          day: '2-digit',
+          month: '2-digit',
+          year: 'numeric',
+        }),
         dirEstablecimiento: 'Ambato',
         obligadoContabilidad: 'NO',
         tipoIdentificacionComprador,
