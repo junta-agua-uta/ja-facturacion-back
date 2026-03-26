@@ -7,11 +7,16 @@ export class EmailService {
 
   async sendEmailWithInvoices(email: string, pdf: Buffer, xml: string) {
     try {
-      Logger.log(email)
+      let recipient = email
+      if (process.env.AMBIENTE === '1') {
+        recipient = process.env.TEST_EMAIL || 'test@example.com'
+        Logger.log(`MODO PRUEBAS: Redirigiendo correo de ${email} a ${recipient}`)
+      }
+      Logger.log(`Enviando factura a: ${recipient}`)
       await this.mailerService.sendMail({
-        to: email,
-        subject: 'Recibo Electrónico Autorizado',
-        text: 'Adjuntamos su recibo. JUNTA ADMINISTRADORA DE AGUA POTABLE SAN VICENTE YACULOMA Y BELLAVISTA EL ROSARIO',
+        to: recipient,
+        subject: '[TEST - SRI PRUEBAS] Recibo Electrónico Autorizado',
+        text: `Este es un comprobante de PRUEBAS. Originalmente destinado a: ${email}. \n\nAdjuntamos su recibo. JUNTA ADMINISTRADORA DE AGUA POTABLE SAN VICENTE YACULOMA Y BELLAVISTA EL ROSARIO`,
         attachments: [
           {
             filename: 'factura.pdf',
