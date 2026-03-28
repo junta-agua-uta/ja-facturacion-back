@@ -117,13 +117,13 @@ export class GenerateInvoiceService {
     return response
   }
 
-  private async documentAuthorization(
+  async documentAuthorization(
     accessKey: string,
     authorizationUrl: string,
   ): Promise<SRIResponseDto> {
     const params = { claveAccesoComprobante: accessKey }
 
-    const response: SRIResponseDto = await new Promise((resolve, reject) => {
+    const response: any = await new Promise((resolve, reject) => {
       createClient(authorizationUrl, (err: Error, client: Client) => {
         if (err) {
           reject(err)
@@ -136,33 +136,56 @@ export class GenerateInvoiceService {
               reject(err)
               return
             }
-            resolve(result as SRIResponseDto)
+            resolve(result)
           },
         )
       })
     })
-    return response
+    // Manejar si la respuesta viene como un arreglo
+    return Array.isArray(response) ? response[0] : response
   }
 
   async documentAuthorizationWithRetries(
     accessKey: string,
     authorizationUrl: string,
-    retries = 5,
+    retries = 10, // Aumentado de 5 a 10
     delayMs = 3000,
   ) {
+    let lastAuth: any = null
     for (let i = 0; i < retries; i++) {
-      const auth: SRIResponseDto = await this.documentAuthorization(
+      const response = await this.documentAuthorization(
         accessKey,
         authorizationUrl,
       )
-      const autorizacion =
-        auth?.RespuestaAutorizacionComprobante?.autorizaciones?.autorizacion
-      if (autorizacion?.estado === 'AUTORIZADO') {
-        return auth
+      
+      // Manejar si la respuesta viene como un arreglo
+      lastAuth = Array.isArray(response) ? response[0] : response
+      
+      const respuesta = lastAuth?.RespuestaAutorizacionComprobante
+      const autorizaciones = respuesta?.autorizaciones?.autorizacion
+      
+      // Si número de comprobantes es "0" o autorizaciones es null, seguimos reintentando
+      if (respuesta?.numeroComprobantes === '0' || !autorizaciones) {
+        Logger.log(`[Intento ${i + 1}/${retries}] Aún no hay respuesta de autorización para la clave: ${accessKey}`)
+        await new Promise((res) => setTimeout(res, delayMs))
+        continue
       }
+
+      // Normalizar autorizacion (puede ser array u objeto)
+      const auth = Array.isArray(autorizaciones) ? autorizaciones[0] : autorizaciones
+      
+      if (auth.estado === 'AUTORIZADO') {
+        return lastAuth
+      }
+      
+      // Si el SRI ya devolvió un error definitivo, paramos
+      if (auth.estado === 'RECHAZADA' || auth.estado === 'DEVUELTA') {
+        return lastAuth
+      }
+
       await new Promise((res) => setTimeout(res, delayMs))
     }
 
-    return null
+    return lastAuth
   }
 }
