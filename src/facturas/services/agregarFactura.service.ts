@@ -13,7 +13,7 @@ export class AgregarFacturaService {
     private readonly prisma: PrismaClient,
     private readonly generateInvoiceService: GenerateInvoiceService,
     private readonly electronicInvoiceService: ElectronicInvoiceService,
-  ) {}
+  ) { }
 
   async agregarFactura(datos: CrearFacturaDto) {
     try {
@@ -31,7 +31,7 @@ export class AgregarFacturaService {
           totalIvaCalc += (detalle.subtotal * Number(razon.IVA)) / 100;
         }
       }
-      
+
       const ivaFinal = datos.iva !== undefined && datos.iva > 0 ? datos.iva : totalIvaCalc;
       const totalGeneral = datos.valorSinImpuesto + ivaFinal;
 

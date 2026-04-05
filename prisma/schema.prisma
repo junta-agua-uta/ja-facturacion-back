@@ -469,8 +469,8 @@ model ConfigAsientoAuto {
   cuentaHaberId Int
   cuentaHaber   PlanCuentas @relation("CuentaHaber", fields: [cuentaHaberId], references: [id])
 
-  cuentaIvaId Int
-  cuentaIva   PlanCuentas @relation("CuentaIva", fields: [cuentaIvaId], references: [id])
+  cuentaIvaId Int?
+  cuentaIva   PlanCuentas? @relation("CuentaIva", fields: [cuentaIvaId], references: [id])
 
   @@unique([empresaId, tipoTransaccion])
   @@map("config_asientos_auto")
