@@ -13,6 +13,7 @@ import { PlanCuentasModule } from './plan-cuentas/plan-cuentas.module';
 import { PeriodosContablesModule } from './periodos-contables/periodos-contables.module';
 import { AsientosModule } from './asientos/asientos.module';
 import { ReportesModule } from './reportes/reportes.module';
+import { EmpresaModule } from './empresa/empresa.module';
 
 
 @Module({
@@ -31,6 +32,7 @@ import { ReportesModule } from './reportes/reportes.module';
     PeriodosContablesModule,
     AsientosModule,
     ReportesModule,
+    EmpresaModule,
   ],
 
   controllers: [],
