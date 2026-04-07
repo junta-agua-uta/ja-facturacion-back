@@ -14,6 +14,7 @@ import { PeriodosContablesModule } from './periodos-contables/periodos-contables
 import { AsientosModule } from './asientos/asientos.module';
 import { ReportesModule } from './reportes/reportes.module';
 import { EmpresaModule } from './empresa/empresa.module';
+import { ConfigAsientosAutoModule } from './config-asientos-auto/config-asientos-auto.module';
 
 
 @Module({
@@ -33,6 +34,7 @@ import { EmpresaModule } from './empresa/empresa.module';
     AsientosModule,
     ReportesModule,
     EmpresaModule,
+    ConfigAsientosAutoModule,
   ],
 
   controllers: [],
