@@ -150,4 +150,37 @@ export class PlanCuentasService {
 
 		return nuevaCuenta
 	}
+
+	async desactivarCuenta(cuentaId: number, empresaId: number) {
+		const cuenta = await this.prisma.planCuentas.findUnique({
+			where: { id: cuentaId },
+			include: {
+				hijas: { where: { activo: true } },
+			},
+		})
+
+		if (!cuenta || cuenta.empresaId !== empresaId) {
+			throw new BadRequestException('La cuenta especificada no existe o no pertenece a esta empresa.')
+		}
+
+		if (cuenta.hijas.length > 0) {
+			throw new BadRequestException('Imposible desactivar: La cuenta posee subcuentas que aún están activas.')
+		}
+
+		const usoEnAsientos = await this.prisma.detalleAsiento.findFirst({
+			where: { 
+				cuentaId,
+				asiento: { estado: 'PENDIENTE' }
+			},
+		})
+
+		if (usoEnAsientos) {
+			throw new BadRequestException('Imposible desactivar: La cuenta posee asientos contables en estado PENDIENTE.')
+		}
+
+		return this.prisma.planCuentas.update({
+			where: { id: cuentaId },
+			data: { activo: false },
+		})
+	}
 }

@@ -213,4 +213,97 @@ export class AsientosService {
 			},
 		})
 	}
+
+	async actualizarAsiento(asientoId: number, data: any) {
+		const asientoOriginal = await this.prisma.asiento.findUnique({
+			where: { id: asientoId },
+			include: { periodo: true }
+		})
+
+		if (!asientoOriginal) {
+			throw new NotFoundException('Asiento contable no encontrado.')
+		}
+
+		if (asientoOriginal.periodo.estado === 'CERRADO') {
+			throw new BadRequestException('Acción denegada: No se puede modificar una transacción de un periodo contable ya cerrado.')
+		}
+
+		if (asientoOriginal.estado === 'APROBADO') {
+			throw new BadRequestException('Seguridad: El asiento contable está APROBADO y blindado. Solo comprobantes en estado PENDIENTE admiten edición.')
+		}
+
+		let nuevoDescuadre: any = asientoOriginal.descuadre
+
+		return this.prisma.$transaction(async (tx) => {
+			if (data.detalles && Array.isArray(data.detalles) && data.detalles.length > 0) {
+				const cuentaIds: number[] = Array.from(new Set(data.detalles.map((d: any) => Number(d.cuentaId))))
+				const cuentas = await tx.planCuentas.findMany({
+					where: { id: { in: cuentaIds } },
+				})
+
+				if (cuentas.length !== cuentaIds.length) {
+					throw new BadRequestException('Una o más cuentas contables proporcionadas no existen en la base de datos.')
+				}
+
+				const cuentasMayores = cuentas.filter((c) => !c.esDetalle)
+				if (cuentasMayores.length > 0) {
+					throw new BadRequestException(
+						`Violación de jerarquía detectada: Las cuentas mayores [${cuentasMayores.map((c) => c.codigo).join(', ')}] no pueden recibir saldos.`
+					)
+				}
+
+				let totalDebe = 0
+				let totalHaber = 0
+				data.detalles.forEach((det: any) => {
+					totalDebe += Number(det.debe)
+					totalHaber += Number(det.haber)
+				})
+
+				const descuadreBase = Math.abs(totalDebe - totalHaber)
+				nuevoDescuadre = Math.round(descuadreBase * 100) / 100
+
+				await tx.detalleAsiento.deleteMany({
+					where: { asientoId },
+				})
+
+				await tx.detalleAsiento.createMany({
+					data: data.detalles.map((det: any, index: number) => {
+						const cta = cuentas.find((c) => c.id === det.cuentaId)!
+						return {
+							asientoId,
+							no: index + 1,
+							codcta: cta.codigo,
+							nombre: cta.nombre,
+							referencia: det.referencia,
+							descta: det.descta,
+							debe: det.debe,
+							haber: det.haber,
+							cuentaId: det.cuentaId,
+						}
+					}),
+				})
+			}
+
+			const fechaInsercion = data.fecha ? new Date(data.fecha) : asientoOriginal.fecha
+			if (data.fecha) {
+				if (fechaInsercion < asientoOriginal.periodo.fechaInicio || fechaInsercion > asientoOriginal.periodo.fechaFin) {
+					throw new BadRequestException(
+						`Inconsistencia temporal: La fecha del asiento no pertenece a las fechas del periodo contable.`
+					)
+				}
+			}
+
+			return tx.asiento.update({
+				where: { id: asientoId },
+				data: {
+					fecha: fechaInsercion,
+					concepto: data.concepto !== undefined ? data.concepto : asientoOriginal.concepto,
+					modelo: data.modelo !== undefined ? data.modelo : asientoOriginal.modelo,
+					comprobante: data.comprobante !== undefined ? data.comprobante : asientoOriginal.comprobante,
+					descuadre: nuevoDescuadre,
+				},
+				include: { detallesAsiento: true },
+			})
+		})
+	}
 }
