@@ -8,6 +8,7 @@ import {
 	Post,
 	Body,
 	Query,
+	Patch,
 } from '@nestjs/common'
 import { ApiBody, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger'
 import { EstadoAsiento } from '@prisma/client'
@@ -65,5 +66,14 @@ export class AsientosController {
 	@Post()
 	async crearAsiento(@Body() data: CreateAsientoDto) {
 		return this.asientosService.crearAsiento(data)
+	}
+
+	@ApiOperation({ summary: 'Actualizar un asiento borrador existente' })
+	@Patch(':id')
+	async actualizarAsiento(
+		@Param('id', ParseIntPipe) id: number,
+		@Body() data: any,
+	) {
+		return this.asientosService.actualizarAsiento(id, data)
 	}
 }
