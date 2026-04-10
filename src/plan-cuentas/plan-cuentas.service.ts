@@ -1,9 +1,10 @@
-import { Injectable } from '@nestjs/common'
+import { Injectable, BadRequestException } from '@nestjs/common'
 import { PrismaClient } from '@prisma/client'
+import { CreatePlanCuentaDto } from './dtos/create-plan-cuenta.dto'
 
 @Injectable()
 export class PlanCuentasService {
-	constructor(private readonly prisma: PrismaClient) {}
+	constructor(private readonly prisma: PrismaClient) { }
 
 	async listarCuentas(
 		page: number,
@@ -76,5 +77,77 @@ export class PlanCuentasService {
 			orderBy: { codigo: 'asc' },
 			take: limit,
 		})
+	}
+
+	async crearCuenta(empresaId: number, data: CreatePlanCuentaDto) {
+		const cuentaExistente = await this.prisma.planCuentas.findUnique({
+			where: {
+				empresaId_codigo: {
+					empresaId: empresaId,
+					codigo: data.codigo,
+				},
+			},
+		})
+
+		if (cuentaExistente) {
+			throw new BadRequestException(`El código de cuenta ${data.codigo} ya existe en esta empresa.`)
+		}
+
+		let nivelCalculado = 1
+		let tipoFinal = data.tipo
+		let naturalezaFinal = data.naturaleza
+
+		if (data.padreId) {
+			const cuentaPadre = await this.prisma.planCuentas.findUnique({
+				where: { id: data.padreId },
+			})
+
+			if (!cuentaPadre) {
+				throw new BadRequestException('La cuenta padre especificada no existe.')
+			}
+
+			if (!data.codigo.startsWith(cuentaPadre.codigo)) {
+				throw new BadRequestException(
+					`Inconsistencia: El código de la subcuenta (${data.codigo}) debe iniciar con el código de su cuenta padre (${cuentaPadre.codigo}).`
+				)
+			}
+
+			nivelCalculado = cuentaPadre.nivel + 1
+			tipoFinal = cuentaPadre.tipo
+			naturalezaFinal = cuentaPadre.naturaleza
+
+			if (cuentaPadre.esDetalle) {
+				const asientosAsociados = await this.prisma.detalleAsiento.count({
+					where: { cuentaId: cuentaPadre.id },
+				})
+
+				if (asientosAsociados > 0) {
+					throw new BadRequestException(
+						'Vulnerabilidad detectada: No se puede crear subcuentas bajo una cuenta transaccional que ya posee historial de asientos contables. Reasigne esos asientos previamente.'
+					)
+				}
+
+				await this.prisma.planCuentas.update({
+					where: { id: cuentaPadre.id },
+					data: { esDetalle: false },
+				})
+			}
+		}
+
+		const nuevaCuenta = await this.prisma.planCuentas.create({
+			data: {
+				codigo: data.codigo,
+				nombre: data.nombre,
+				tipo: tipoFinal,
+				naturaleza: naturalezaFinal,
+				casillero: data.casillero,
+				nivel: nivelCalculado,
+				esDetalle: true,
+				padreId: data.padreId || null,
+				empresaId: empresaId,
+			},
+		})
+
+		return nuevaCuenta
 	}
 }

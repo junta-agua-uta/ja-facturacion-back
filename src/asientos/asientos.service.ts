@@ -4,6 +4,7 @@ import {
 	NotFoundException,
 } from '@nestjs/common'
 import { EstadoAsiento, PrismaClient } from '@prisma/client'
+import { CreateAsientoDto } from './dto/create-asiento.dto'
 
 @Injectable()
 export class AsientosService {
@@ -114,7 +115,7 @@ export class AsientosService {
 		await this.prisma.$transaction([
 			this.prisma.detalleAsiento.deleteMany({ where: { asientoId: id } }),
 			this.prisma.facturaAsiento.deleteMany({ where: { asientoId: id } }),
-			this.prisma.abonos.updateMany({
+			this.prisma.aBONOS.updateMany({
 				where: { asientoId: id },
 				data: { asientoId: null },
 			}),
@@ -122,5 +123,94 @@ export class AsientosService {
 		])
 
 		return { message: 'Asiento eliminado correctamente' }
+	}
+
+	async crearAsiento(data: CreateAsientoDto) {
+		const periodo = await this.prisma.periodoContable.findUnique({
+			where: { id: data.periodoId },
+		})
+
+		if (!periodo) {
+			throw new NotFoundException('Periodo contable no encontrado')
+		}
+
+		if (periodo.estado === 'CERRADO') {
+			throw new BadRequestException('Intento de inserción bloqueado: El periodo contable ingresado se encuentra CERRADO.')
+		}
+
+		const fechaInsercion = new Date(data.fecha)
+		if (fechaInsercion < periodo.fechaInicio || fechaInsercion > periodo.fechaFin) {
+			throw new BadRequestException(
+				`Inconsistencia temporal: La fecha del asiento (${fechaInsercion.toISOString().split('T')[0]}) no pertenece a las fechas del periodo contable.`
+			)
+		}
+
+		const cuentaIds = [...new Set(data.detalles.map((d) => d.cuentaId))]
+		const cuentas = await this.prisma.planCuentas.findMany({
+			where: { id: { in: cuentaIds } },
+		})
+
+		if (cuentas.length !== cuentaIds.length) {
+			throw new BadRequestException('Una o más cuentas contables no existen en la base de datos.')
+		}
+
+		const cuentasMayores = cuentas.filter((c) => !c.esDetalle)
+		if (cuentasMayores.length > 0) {
+			throw new BadRequestException(
+				`Violación de jerarquía detectada: Las cuentas mayores [${cuentasMayores.map((c) => c.codigo).join(', ')}] no pueden recibir saldos. Debe imputar a una cuenta hija de detalle (esDetalle: true).`
+			)
+		}
+
+		let totalDebe = 0
+		let totalHaber = 0
+
+		data.detalles.forEach((det) => {
+			totalDebe += Number(det.debe)
+			totalHaber += Number(det.haber)
+		})
+
+		// Precisión a dos decimales
+		const descuadreBase = Math.abs(totalDebe - totalHaber)
+		const descuadre = Math.round(descuadreBase * 100) / 100
+
+		const ultimoAsiento = await this.prisma.asiento.findFirst({
+			where: { periodoId: data.periodoId },
+			orderBy: { numero: 'desc' },
+		})
+
+		const siguienteNumero = ultimoAsiento ? ultimoAsiento.numero + 1 : 1
+
+		return this.prisma.asiento.create({
+			data: {
+				numero: siguienteNumero,
+				fecha: new Date(data.fecha),
+				nombre: `Asiento Diario #${siguienteNumero} - ${periodo.nombre}`,
+				concepto: data.concepto,
+				modelo: data.modelo,
+				comprobante: data.comprobante,
+				descuadre: descuadre,
+				estado: 'PENDIENTE', 
+				periodoId: data.periodoId,
+				creadoPorId: data.creadoPorId,
+				detallesAsiento: {
+					create: data.detalles.map((det, index) => {
+						const cta = cuentas.find((c) => c.id === det.cuentaId)!
+						return {
+							no: index + 1,
+							codcta: cta.codigo,
+							nombre: cta.nombre,
+							referencia: det.referencia,
+							descta: det.descta,
+							debe: det.debe,
+							haber: det.haber,
+							cuentaId: det.cuentaId,
+						}
+					}),
+				},
+			},
+			include: {
+				detallesAsiento: true,
+			},
+		})
 	}
 }

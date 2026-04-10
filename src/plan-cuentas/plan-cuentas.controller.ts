@@ -1,12 +1,15 @@
 import {
+	Body,
 	Controller,
 	DefaultValuePipe,
 	Get,
 	ParseIntPipe,
+	Post,
 	Query,
 } from '@nestjs/common'
-import { ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger'
+import { ApiBody, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger'
 import { PlanCuentasService } from './plan-cuentas.service'
+import { CreatePlanCuentaDto } from './dtos/create-plan-cuenta.dto'
 
 @ApiTags('Plan Cuentas')
 @Controller('plan-cuentas')
@@ -45,5 +48,17 @@ export class PlanCuentasController {
 		@Query('limit', new DefaultValuePipe('20'), ParseIntPipe) limit: number,
 	) {
 		return this.planCuentasService.buscarCuenta(termino, empresaId, limit)
+	}
+
+	@ApiOperation({ summary: 'Crear una nueva cuenta contable' })
+	@ApiQuery({ name: 'empresaId', required: false, type: Number })
+	@ApiBody({ type: CreatePlanCuentaDto })
+	@Post()
+	async crearCuenta(
+		@Query('empresaId', new DefaultValuePipe('1'), ParseIntPipe)
+		empresaId: number,
+		@Body() data: CreatePlanCuentaDto,
+	) {
+		return this.planCuentasService.crearCuenta(empresaId, data)
 	}
 }

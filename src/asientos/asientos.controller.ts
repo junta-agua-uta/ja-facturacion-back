@@ -5,11 +5,14 @@ import {
 	Get,
 	Param,
 	ParseIntPipe,
+	Post,
+	Body,
 	Query,
 } from '@nestjs/common'
-import { ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger'
+import { ApiBody, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger'
 import { EstadoAsiento } from '@prisma/client'
 import { AsientosService } from './asientos.service'
+import { CreateAsientoDto } from './dto/create-asiento.dto'
 
 @ApiTags('Asientos')
 @Controller('asientos')
@@ -55,5 +58,12 @@ export class AsientosController {
 	@Delete(':id')
 	async eliminarAsiento(@Param('id', ParseIntPipe) id: number) {
 		return this.asientosService.eliminarAsiento(id)
+	}
+
+	@ApiOperation({ summary: 'Crear un nuevo asiento contable' })
+	@ApiBody({ type: CreateAsientoDto })
+	@Post()
+	async crearAsiento(@Body() data: CreateAsientoDto) {
+		return this.asientosService.crearAsiento(data)
 	}
 }
