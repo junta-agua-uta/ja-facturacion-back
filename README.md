@@ -113,3 +113,23 @@ Con esto cualquier persona que clone el proyecto y apunte a una base de datos ex
 ```bash
 npm ci && npx prisma generate && npx prisma migrate deploy
 ```
+
+---
+
+## 🚨 Atención: Especial Módulo Contable (Abril 2026)
+
+Si **recién haces pull** de los modelos del Módulo Contable (tablas como `empresas`, `asientos`, etc.), y tu base de datos **ya tenía usuarios previos**, Prisma fallará aplicando el `empresaId`. Sigue este flujo estricto para evitar errores:
+
+1. Crea la migración vacía sin aplicarla:
+   ```bash
+   npx prisma migrate dev --name init_modulo_contable --create-only
+   ```
+2. Ve al archivo `prisma/migrations/xxxx_init_modulo_contable/migration.sql` que se acaba de crear y agrega **antes** del `ALTER TABLE usuarios` el siguiente insert manual para la base de la foreign key:
+   ```sql
+   INSERT INTO `empresas` (`id`, `nombre`, `email`, `ruc`, `direccion`, `telefono`, `representanteLegal`, `updatedAt`) 
+   VALUES (1, 'Junta de Agua Principal', 'info@junta.com', '9999999999999', 'Dirección Principal', '0999999999', 'Administrador', CURRENT_TIMESTAMP(3));
+   ```
+3. Ahora sí, aplica la migración en tu entorno local:
+   ```bash
+   npx prisma migrate dev
+   ```

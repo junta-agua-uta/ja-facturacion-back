@@ -2,30 +2,24 @@ import { Injectable } from '@nestjs/common'
 
 @Injectable()
 export class DateUtil {
-  /**
-   * Obtiene la fecha actual en la zona horaria local
-   */
   static getCurrentDate(): Date {
-    // Crear una fecha con la hora local
-    const now = new Date()
-    // Ajustar al offset local para asegurar que se mantenga la hora local
-    return new Date(now.getTime() - now.getTimezoneOffset() * 60 * 1000)
+    return new Date()
   }
 
   static getLocalDate(date: Date): Date {
-    return new Date(date.getTime() - date.getTimezoneOffset() * 60 * 1000)
+    return new Date(date)
   }
 
   static getLocalDateEndOfDay(date: Date): Date {
-    return new Date(date.getTime() + (24 - date.getHours()) * 60 * 60 * 1000)
+    const local = new Date(date)
+    local.setUTCHours(23 + 5, 59, 59, 999)
+    return local
   }
 
   static formatDate(fecha: Date | string | null | undefined): string {
     if (!fecha) return 'Sin fecha'
-    const d = DateUtil.getLocalDate(new Date(fecha))
+    const d = new Date(fecha)
     if (isNaN(d.getTime())) return ''
-    return `${d.getDate().toString().padStart(2, '0')}/${(d.getMonth() + 1)
-      .toString()
-      .padStart(2, '0')}/${d.getFullYear()}`
+    return d.toLocaleDateString('es-ES', { timeZone: 'America/Guayaquil' })
   }
 }

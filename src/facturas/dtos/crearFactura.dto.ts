@@ -144,6 +144,16 @@ export class CrearFacturaDto {
   iva?: number
 
   @ApiProperty({
+    description: 'Secuencia de la factura (opcional, para estrés o control manual)',
+    example: 7000,
+    required: false,
+    type: Number,
+  })
+  @IsInt()
+  @IsOptional()
+  secuencia?: number
+
+  @ApiProperty({
     description: 'Detalles de la factura',
     required: true,
     type: [DetallesFacturaDto],

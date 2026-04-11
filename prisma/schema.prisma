@@ -21,8 +21,14 @@ model USUARIOS {
   FECHA_CREACION DateTime?  @default(now())
   FACTURAS       FACTURAS[]
 
-  @@map("usuarios")
+  // --- MODULO CONTABLE ---
+  empresaId         Int            @default(1)
+  empresa           Empresa        @relation(fields: [empresaId], references: [id])
+  asientosCreados   Asiento[]      @relation("AsientosCreados")
+  asientosAprobados Asiento[]      @relation("AsientosAprobados")
+  auditoriaLogs     AuditoriaLog[]
 
+  @@map("usuarios")
 }
 
 model CLIENTES {
@@ -49,7 +55,6 @@ model CLIENTES {
   MEDIDORES        MEDIDORES[]
 
   @@map("clientes")
-
 }
 
 model CUENTAS {
@@ -73,6 +78,10 @@ model ABONOS {
   DESCRIPCION String
   ID_CUENTA   Int
   cuenta      CUENTAS  @relation(fields: [ID_CUENTA], references: [ID])
+
+  // --- MODULO CONTABLE ---
+  asientoId Int?
+  asiento   Asiento? @relation(fields: [asientoId], references: [id])
 
   @@index([ID_CUENTA], map: "ABONOS_ID_CUENTA_fkey")
   @@map("abonos")
@@ -113,7 +122,6 @@ model SUCURSALES {
   FACTURAS      FACTURAS[]
 
   @@map("sucursales")
-
 }
 
 model RAZONES {
@@ -126,7 +134,6 @@ model RAZONES {
   DETALLES_FACTURA DETALLES_FACTURA[]
 
   @@map("razones")
-
 }
 
 model FACTURAS {
@@ -150,6 +157,9 @@ model FACTURAS {
   medidor            MEDIDORES          @relation(fields: [ID_MEDIDOR], references: [ID])
   sucursal           SUCURSALES         @relation(fields: [ID_SUCURSAL], references: [ID])
   usuario            USUARIOS           @relation(fields: [ID_USUARIO], references: [ID])
+
+  // --- MODULO CONTABLE ---
+  facturasAsiento FacturaAsiento[]
 
   @@index([ID_CLIENTE], map: "FACTURAS_ID_CLIENTE_fkey")
   @@index([ID_MEDIDOR], map: "FACTURAS_ID_MEDIDOR_fkey")
@@ -186,7 +196,6 @@ model CONCEPTOS {
   FECHA_CREACION DateTime? @default(now()) @db.DateTime(0)
 
   @@map("conceptos")
-
 }
 
 model LiquidacionCompra {
@@ -291,4 +300,195 @@ model SecuencialDoc {
 
   @@unique([codDoc, estab, ptoEmi], name: "uniq_doc_serie")
   @@map("secuencial_doc")
+}
+
+// ============================================
+// MODULO CONTABLE
+// ============================================
+
+enum EstadoPeriodo {
+  ABIERTO
+  CERRADO
+}
+
+enum EstadoAsiento {
+  PENDIENTE
+  APROBADO
+}
+
+model Empresa {
+  id                 Int      @id @default(autoincrement())
+  nombre             String
+  email              String
+  ruc                String   @unique
+  direccion          String
+  telefono           String
+  moneda             String   @default("USD")
+  representanteLegal String
+  logo               String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  usuarios           USUARIOS[]
+  periodosContables  PeriodoContable[]
+  planesCuentas      PlanCuentas[]
+  configAsientosAuto ConfigAsientoAuto[]
+
+  @@map("empresas")
+}
+
+model PeriodoContable {
+  id          Int           @id @default(autoincrement())
+  nombre      String
+  fechaInicio DateTime
+  fechaFin    DateTime
+  estado      EstadoPeriodo @default(ABIERTO)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  empresaId Int
+  empresa   Empresa   @relation(fields: [empresaId], references: [id])
+  asientos  Asiento[]
+
+  @@unique([empresaId, nombre])
+  @@map("periodos_contables")
+}
+
+model PlanCuentas {
+  id         Int      @id @default(autoincrement())
+  codigo     String
+  nombre     String
+  tipo       String
+  naturaleza String
+  casillero  String?
+  nivel      Int
+  esDetalle  Boolean
+  activo     Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  empresaId Int
+  empresa   Empresa @relation(fields: [empresaId], references: [id])
+
+  padreId Int?
+  padre   PlanCuentas?  @relation("JerarquiaCuentas", fields: [padreId], references: [id], onDelete: Restrict)
+  hijas   PlanCuentas[] @relation("JerarquiaCuentas")
+
+  detallesAsiento DetalleAsiento[]
+
+  configDebe  ConfigAsientoAuto[] @relation("CuentaDebe")
+  configHaber ConfigAsientoAuto[] @relation("CuentaHaber")
+  configIva   ConfigAsientoAuto[] @relation("CuentaIva")
+
+  @@unique([empresaId, codigo])
+  @@map("plan_cuentas")
+}
+
+model Asiento {
+  id              Int           @id @default(autoincrement())
+  comprobante     String?
+  modelo          String?
+  diarios         String?
+  codigo          String?
+  numero          Int
+  fecha           DateTime
+  nombre          String
+  concepto        String
+  estado          EstadoAsiento @default(PENDIENTE)
+  formato         String?
+  descuadre       Decimal       @default(0) @db.Decimal(10, 2)
+  fechaAprobacion DateTime?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  periodoId Int
+  periodo   PeriodoContable @relation(fields: [periodoId], references: [id])
+
+  creadoPorId Int
+  creadoPor   USUARIOS @relation("AsientosCreados", fields: [creadoPorId], references: [ID])
+
+  aprobadoPorId Int?
+  aprobadoPor   USUARIOS? @relation("AsientosAprobados", fields: [aprobadoPorId], references: [ID])
+
+  detallesAsiento DetalleAsiento[]
+  facturasAsiento FacturaAsiento[]
+  abonos          ABONOS[]
+
+  @@unique([periodoId, numero])
+  @@map("asientos")
+}
+
+model DetalleAsiento {
+  id         Int     @id @default(autoincrement())
+  no         Int
+  codcta     String
+  nombre     String
+  referencia String?
+  descta     String?
+  debe       Decimal @default(0) @db.Decimal(10, 2)
+  haber      Decimal @default(0) @db.Decimal(10, 2)
+
+  asientoId Int
+  asiento   Asiento @relation(fields: [asientoId], references: [id])
+
+  cuentaId Int
+  cuenta   PlanCuentas @relation(fields: [cuentaId], references: [id])
+
+  @@unique([asientoId, no])
+  @@map("detalles_asiento")
+}
+
+model FacturaAsiento {
+  id           Int      @id @default(autoincrement())
+  tipoRelacion String
+  createdAt    DateTime @default(now())
+
+  facturaId Int
+  factura   FACTURAS @relation(fields: [facturaId], references: [ID])
+
+  asientoId Int
+  asiento   Asiento @relation(fields: [asientoId], references: [id])
+
+  @@unique([facturaId, asientoId])
+  @@map("facturas_asiento")
+}
+
+model ConfigAsientoAuto {
+  id              Int      @id @default(autoincrement())
+  tipoTransaccion String
+  activo          Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  empresaId Int
+  empresa   Empresa @relation(fields: [empresaId], references: [id])
+
+  cuentaDebeId Int
+  cuentaDebe   PlanCuentas @relation("CuentaDebe", fields: [cuentaDebeId], references: [id])
+
+  cuentaHaberId Int
+  cuentaHaber   PlanCuentas @relation("CuentaHaber", fields: [cuentaHaberId], references: [id])
+
+  cuentaIvaId Int?
+  cuentaIva   PlanCuentas? @relation("CuentaIva", fields: [cuentaIvaId], references: [id])
+
+  @@unique([empresaId, tipoTransaccion])
+  @@map("config_asientos_auto")
+}
+
+model AuditoriaLog {
+  id           Int      @id @default(autoincrement())
+  accion       String
+  entidad      String
+  entidadId    Int
+  datosPrevios Json?
+  datosNuevos  Json?
+  ip           String?
+  userAgent    String?
+  createdAt    DateTime @default(now())
+
+  usuarioId Int
+  usuario   USUARIOS @relation(fields: [usuarioId], references: [ID])
+
+  @@map("auditoria_logs")
 }

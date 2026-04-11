@@ -13,7 +13,7 @@ export class AgregarFacturaService {
     private readonly prisma: PrismaClient,
     private readonly generateInvoiceService: GenerateInvoiceService,
     private readonly electronicInvoiceService: ElectronicInvoiceService,
-  ) {}
+  ) { }
 
   async agregarFactura(datos: CrearFacturaDto) {
     try {
@@ -22,7 +22,19 @@ export class AgregarFacturaService {
           SECUENCIA: true, // Reemplaza 'nombreDeLaColumna' con el nombre real de tu columna
         },
       })
-      const secuencia = (maxResult._max.SECUENCIA || 0) + 1
+      const secuencia = datos.secuencia || (maxResult._max.SECUENCIA || 0) + 1
+      // 1. Fetch VAT rates for all details to correctly calculate totals
+      let totalIvaCalc = 0;
+      for (const detalle of datos.detalles) {
+        const razon = await this.prisma.rAZONES.findUnique({ where: { ID: detalle.idRazon } });
+        if (razon && razon.IVA) {
+          totalIvaCalc += (detalle.subtotal * Number(razon.IVA)) / 100;
+        }
+      }
+
+      const ivaFinal = datos.iva !== undefined && datos.iva > 0 ? datos.iva : totalIvaCalc;
+      const totalGeneral = datos.valorSinImpuesto + ivaFinal;
+
       // Crear la factura en la base de datos
       const nuevaFactura = await this.prisma.fACTURAS
         .create({
@@ -36,8 +48,8 @@ export class AgregarFacturaService {
             ID_MEDIDOR: datos.idMedidor,
             TIPO_PAGO: datos.tipoPago,
             VALOR_SIN_IMPUESTO: datos.valorSinImpuesto,
-            IVA: datos.iva || 0,
-            TOTAL: datos.valorSinImpuesto + (datos.iva || 0),
+            IVA: ivaFinal,
+            TOTAL: totalGeneral,
           },
         })
         .catch((error) => {
@@ -77,7 +89,7 @@ export class AgregarFacturaService {
         },
       })
       Logger.log(facturaCreada.FECHA_EMISION)
-      const dtoFactura = this.obtenerDtoFactura(facturaCreada)
+      const dtoFactura = await this.obtenerDtoFactura(facturaCreada)
       const facturaElectronica = this.generateInvoiceService.generateInvoice(
         dtoFactura,
         facturaCreada.cliente.CORREO,
@@ -95,6 +107,14 @@ export class AgregarFacturaService {
         facturaElectronica.xml,
         accessKey,
       )
+      if (response.pending) {
+        await this.prisma.fACTURAS.update({
+          where: { ID: facturaCreada.ID },
+          data: {
+            ESTADO_FACTURA: 'SIN_AUTORIZAR',
+          },
+        })
+      }
       Logger.log('Respuesta final: ' + response.message)
       if (
         response.message ==
@@ -121,12 +141,32 @@ export class AgregarFacturaService {
     }
   }
 
-  private obtenerDtoFactura(facturaCreada): InvoiceInputDto {
-    const ambiente = process.env.AMBIENTE as '1' | '2'
+  private async obtenerDtoFactura(facturaCreada): Promise<InvoiceInputDto> {
+    const emisorRuc = process.env.EMISOR_RUC
+    const emisor = emisorRuc
+      ? await this.prisma.emisor.findUnique({ where: { ruc: emisorRuc } })
+      : await this.prisma.emisor.findFirst({ where: { activo: true } })
+
+    if (!emisor) {
+      throw new Error(
+        'No se encontró Emisor configurado en la base de datos (revisa tabla "emisor")',
+      )
+    }
+
+    const ambiente = (process.env.AMBIENTE || emisor.ambiente) as '1' | '2'
     const tipoEmisi = '1'
     //cambiar a futuro para que traigaesta info desde bd
-    const tipoIdentificacionComprador =
-      facturaCreada.cliente.IDENTIFICACION.length === 10 ? '05' : '04'
+    let identification = facturaCreada.cliente.IDENTIFICACION
+    let tipoIdentificacionComprador: '04' | '05' | '07' = '05' // Cédula por defecto
+
+    if (identification === '9999999999999' || identification === '9999999999') {
+      tipoIdentificacionComprador = '07' // Consumidor Final
+      identification = '9999999999999' // Force 13 digits for SRI
+    } else if (identification.length === 13) {
+      tipoIdentificacionComprador = '04' // RUC
+    } else if (identification.length === 10) {
+      tipoIdentificacionComprador = '05' // Cédula
+    }
 
     let formaPago = ''
     switch (facturaCreada.TIPO_PAGO) {
@@ -152,43 +192,53 @@ export class AgregarFacturaService {
       infoTributaria: {
         ambiente,
         tipoEmision: tipoEmisi,
-        razonSocial: 'MANOBANDA YUGCHA JOSE FRANCISCO',
-        ruc: '1891809449001',
+        razonSocial: emisor.razonSocial,
+        ruc: emisor.ruc,
         codDoc: '01',
-        estab: '001',
-        ptoEmi: '200',
+        estab: emisor.estab,
+        ptoEmi: emisor.ptoEmi,
         secuencial: facturaCreada.SECUENCIA.toString().padStart(9, '0'),
-        dirMatriz: 'Ambato',
+        dirMatriz: emisor.dirMatriz,
       },
       infoFactura: {
-        fechaEmision: facturaCreada.FECHA_EMISION.toLocaleDateString('es-ES'),
+        fechaEmision: facturaCreada.FECHA_EMISION.toLocaleDateString('es-ES', {
+          timeZone: 'America/Guayaquil',
+          day: '2-digit',
+          month: '2-digit',
+          year: 'numeric',
+        }),
         dirEstablecimiento: 'Ambato',
         obligadoContabilidad: 'NO',
         tipoIdentificacionComprador,
         guiaRemision: `${facturaCreada.ID_SUCURSAL.toString().padStart(3, '0')}-${facturaCreada.sucursal.PUNTO_EMISION}-${facturaCreada.SECUENCIA.toString().padStart(9, '0')}`,
-        razonSocialComprador: facturaCreada.cliente.RAZON_SOCIAL,
-        identificacionComprador: facturaCreada.cliente.IDENTIFICACION,
-        direccionComprador: facturaCreada.cliente.DIRECCION,
-        totalSinImpuestos: facturaCreada.VALOR_SIN_IMPUESTO.toString(),
+        razonSocialComprador: this.cleanString(facturaCreada.cliente.RAZON_SOCIAL),
+        identificacionComprador: identification,
+        direccionComprador: this.cleanString(facturaCreada.cliente.DIRECCION),
+        totalSinImpuestos: facturaCreada.VALOR_SIN_IMPUESTO.toFixed(2),
         totalDescuento: facturaCreada.DETALLES_FACTURA.reduce(
           (total, detalle) => total + (detalle.DESCUENTO || 0),
           0,
-        ).toString(),
+        ).toFixed(2),
         totalConImpuestos: {
           totalImpuesto: Object.values(
             facturaCreada.DETALLES_FACTURA.reduce(
               (acumulador, detalle) => {
-                const ivaKey = detalle.razon.IVA.toString()
+                const ivaValue = Number(detalle.razon.IVA)
+                const ivaKey = ivaValue.toString()
                 if (!acumulador[ivaKey]) {
                   acumulador[ivaKey] = {
                     codigo: '2',
-                    codigoPorcentaje: '0',
+                    codigoPorcentaje: this.getIvaCode(ivaValue),
                     descuentoAdicional: '0.00',
                     baseImponible: 0,
-                    valor: ivaKey,
+                    valor: '0', // Will be calculated below
                   }
                 }
                 acumulador[ivaKey].baseImponible += Number(detalle.SUBTOTAL)
+                acumulador[ivaKey].valor = (
+                  (acumulador[ivaKey].baseImponible * ivaValue) /
+                  100
+                ).toFixed(2)
                 return acumulador
               },
               {} as Record<
@@ -197,20 +247,23 @@ export class AgregarFacturaService {
                   codigo: '2' | '3' | '5'
                   codigoPorcentaje: '0' | '2' | '3' | '4' | '6' | '7' | '8'
                   descuentoAdicional: string
-                  baseImponible: number
+                  baseImponible: number | string
                   valor: string
                 }
               >,
             ) as TotalWithTaxDto[],
-          ),
+          ).map(impuesto => ({
+            ...impuesto,
+            baseImponible: Number(impuesto.baseImponible).toFixed(2)
+          })),
         },
-        importeTotal: facturaCreada.TOTAL.toString(),
+        importeTotal: facturaCreada.TOTAL.toFixed(2),
         moneda: 'dolar',
         pagos: {
           pago: [
             {
               formaPago,
-              total: facturaCreada.TOTAL.toString(),
+              total: facturaCreada.TOTAL.toFixed(2),
             },
           ],
         },
@@ -219,24 +272,48 @@ export class AgregarFacturaService {
         detalle: facturaCreada.DETALLES_FACTURA.map((detalle) => ({
           codigoPrincipal: detalle.razon.CODIGO,
           codigoAuxiliar: 'OTR001',
-          descripcion: detalle.DESCRIPCION,
-          cantidad: detalle.CANTIDAD.toString(),
-          precioUnitario: (detalle.SUBTOTAL / detalle.CANTIDAD).toString(),
-          descuento: detalle.DESCUENTO.toString(),
-          precioTotalSinImpuesto: detalle.SUBTOTAL.toString(),
+          descripcion: this.cleanString(detalle.DESCRIPCION || 'PRODUCTO'),
+          cantidad: detalle.CANTIDAD.toFixed(6),
+          precioUnitario: (detalle.SUBTOTAL / detalle.CANTIDAD).toFixed(6),
+          descuento: detalle.DESCUENTO.toFixed(2),
+          precioTotalSinImpuesto: detalle.SUBTOTAL.toFixed(2),
           impuestos: {
             impuesto: {
               codigo: '2',
-              codigoPorcentaje: '0',
-              tarifa: '0.00',
-              baseImponible: detalle.SUBTOTAL.toString(),
-              valor: detalle.razon.IVA.toString(),
+              codigoPorcentaje: this.getIvaCode(Number(detalle.razon.IVA)),
+              tarifa: Number(detalle.razon.IVA).toFixed(2),
+              baseImponible: detalle.SUBTOTAL.toFixed(2),
+              valor: (
+                (Number(detalle.SUBTOTAL) * Number(detalle.razon.IVA)) /
+                100
+              ).toFixed(2),
             },
           },
         })),
       },
     }
     return invoiceData
+  }
+
+  private cleanString(str: string): string {
+    if (!str) return 'S/N'
+    return str
+      .replace(/[^\x00-\x7F]/g, '') // Remove non-ASCII
+      .replace(/\?+/g, '') // Remove question marks from bad encoding
+      .replace(/\s+/g, ' ') // Collapse multiple spaces
+      .trim() || 'S/N'
+  }
+
+  private getIvaCode(
+    ivaValue: number,
+  ): '0' | '2' | '3' | '4' | '5' | '6' | '7' | '8' {
+    const val = Number(ivaValue)
+    if (val === 0) return '0'
+    if (val === 12) return '2'
+    if (val === 14) return '3'
+    if (val === 15) return '4'
+    if (val === 5) return '5'
+    return '0' // Default to 0% if unknown
   }
 
   async autorizarFactura(idfac: number, isComplete: boolean = true) {
@@ -262,7 +339,7 @@ export class AgregarFacturaService {
       }
 
       const facturaElectronica = this.generateInvoiceService.generateInvoice(
-        this.obtenerDtoFactura(factura),
+        await this.obtenerDtoFactura(factura),
         factura.cliente.CORREO,
       )
 
