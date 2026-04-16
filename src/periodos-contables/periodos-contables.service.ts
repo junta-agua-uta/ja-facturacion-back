@@ -3,7 +3,7 @@ import { Injectable, BadRequestException } from '@nestjs/common'
 
 @Injectable()
 export class PeriodosContablesService {
-	constructor(private readonly prisma: PrismaClient) {}
+	constructor(private readonly prisma: PrismaClient) { }
 
 	async listarPeriodos(
 		page: number,
@@ -77,7 +77,7 @@ export class PeriodosContablesService {
 		if (!periodo) {
 			throw new BadRequestException('El periodo contable no existe o no pertenece a la empresa.')
 		}
-		
+
 		if (periodo.estado === 'CERRADO') return periodo
 
 		const asientosPendientes = await this.prisma.asiento.count({
@@ -91,6 +91,24 @@ export class PeriodosContablesService {
 		return this.prisma.periodoContable.update({
 			where: { id: periodoId },
 			data: { estado: 'CERRADO' }
+		})
+	}
+
+	// Esto es una cuestion demasiado rara
+	async desbloquearPeriodo(periodoId: number, empresaId: number) {
+		const periodo = await this.prisma.periodoContable.findUnique({
+			where: { id: periodoId, empresaId }
+		})
+
+		if (!periodo) {
+			throw new BadRequestException('El periodo contable no existe o no pertenece a la empresa.')
+		}
+
+		if (periodo.estado === 'ABIERTO') return periodo
+
+		return this.prisma.periodoContable.update({
+			where: { id: periodoId },
+			data: { estado: 'ABIERTO' }
 		})
 	}
 }
