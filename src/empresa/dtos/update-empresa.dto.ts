@@ -1,4 +1,5 @@
-import { IsEmail, IsOptional, IsString, MaxLength } from 'class-validator'
+import { IsEmail, IsOptional, IsString, MaxLength, IsEnum } from 'class-validator'
+import { ApiProperty } from '@nestjs/swagger'
 
 export class UpdateEmpresaDto {
   @IsOptional()
@@ -40,4 +41,9 @@ export class UpdateEmpresaDto {
   @IsString()
   @MaxLength(191)
   logo?: string
+
+  @ApiProperty({ description: 'Modo de generación de asientos de facturas', enum: ['INDIVIDUAL', 'DIARIO', 'MENSUAL'], required: false })
+  @IsOptional()
+  @IsEnum(['INDIVIDUAL', 'DIARIO', 'MENSUAL'])
+  modoAsientos?: string
 }
