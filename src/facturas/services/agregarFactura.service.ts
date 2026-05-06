@@ -134,9 +134,13 @@ export class AgregarFacturaService {
 
         // Generar asiento contable automático para la factura autorizada
         try {
-          await this.asientoAutomaticoService.generarAsientoAutomatico({
-            tipoTransaccion: 'FACTURA_VENTA',
-            empresaId: 1,
+          const empresaId = 1; // Empresa default actual
+          const empresa = await this.prisma.empresa.findUnique({ where: { id: empresaId } });
+          
+          if (empresa?.modoAsientos === 'INDIVIDUAL') {
+            await this.asientoAutomaticoService.generarAsientoAutomatico({
+              tipoTransaccion: 'FACTURA_VENTA',
+              empresaId,
             usuarioId: datos.idUsuario,
             fecha: DateUtil.getCurrentDate(),
             montoBase: datos.valorSinImpuesto,
@@ -147,6 +151,9 @@ export class AgregarFacturaService {
             facturaId: facturaCreada.ID,
           })
           Logger.log(`Asiento contable generado para factura ID: ${facturaCreada.ID}`)
+        } else {
+          Logger.log(`Factura autorizada. Asiento NO generado por modo de agrupación: ${empresa?.modoAsientos}`);
+        }
         } catch (asientoError) {
           Logger.warn(
             `No se pudo generar el asiento contable para la factura ID: ${facturaCreada.ID}. ` +

@@ -326,6 +326,7 @@ model Empresa {
   moneda             String   @default("USD")
   representanteLegal String
   logo               String?
+  modoAsientos       String   @default("INDIVIDUAL") // INDIVIDUAL, DIARIO, MENSUAL
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
 

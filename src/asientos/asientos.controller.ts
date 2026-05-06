@@ -11,6 +11,7 @@ import {
 	Patch,
 	UseGuards,
 	Req,
+	Res,
 } from '@nestjs/common'
 import { ApiBearerAuth, ApiBody, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger'
 import { EstadoAsiento } from '@prisma/client'
@@ -20,6 +21,8 @@ import { CreateAsientoDto } from './dto/create-asiento.dto'
 import { AuthGuard } from '../auth/guards/auth.guard'
 import { RoleGuard } from '../auth/guards/role.guard'
 import { Rol } from '../common/decorators/role.decorator'
+import { AsientoPdfService } from './services/asiento-pdf.service'
+import { Response } from 'express'
 
 @ApiTags('Asientos')
 @Controller('asientos')
@@ -27,6 +30,7 @@ export class AsientosController {
 	constructor(
 		private readonly asientosService: AsientosService,
 		private readonly asientoAutomaticoService: AsientoAutomaticoService,
+		private readonly asientoPdfService: AsientoPdfService,
 	) {}
 
 	@ApiOperation({ summary: 'Listar asientos con filtros' })
@@ -197,5 +201,22 @@ export class AsientosController {
 			body.empresaId || 1,
 			req.user.id,
 		)
+	}
+
+	@ApiOperation({ summary: 'Descargar comprobante de diario (Asiento) en PDF' })
+	@ApiQuery({ name: 'empresaId', required: false, type: Number })
+	@Get(':id/pdf')
+	async descargarPdf(
+		@Param('id', ParseIntPipe) id: number,
+		@Query('empresaId', new DefaultValuePipe('1'), ParseIntPipe) empresaId: number,
+		@Res() res: Response,
+	) {
+		const buffer = await this.asientoPdfService.generarPdfAsiento(id, empresaId);
+		res.set({
+			'Content-Type': 'application/pdf',
+			'Content-Disposition': `attachment; filename="comprobante_diario_${id}.pdf"`,
+			'Content-Length': buffer.length,
+		});
+		res.end(buffer);
 	}
 }
