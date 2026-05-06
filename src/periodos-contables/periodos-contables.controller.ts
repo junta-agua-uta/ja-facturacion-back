@@ -9,6 +9,7 @@ import {
   UseGuards,
   Post,
   Body,
+  Req,
 } from '@nestjs/common'
 import {
   ApiOperation,
@@ -113,5 +114,20 @@ export class PeriodosContablesController {
     @Body() data: any,
   ) {
     return this.periodosContablesService.crearPeriodo(empresaId, data)
+  }
+
+  @ApiOperation({ summary: 'Cierre contable formal (genera asiento de cierre + bloquea período)' })
+  @ApiParam({ name: 'id', description: 'ID del periodo', type: Number })
+  @ApiQuery({ name: 'empresaId', description: 'ID de la empresa', type: Number })
+  @ApiBearerAuth('access-token')
+  @UseGuards(AuthGuard, RoleGuard)
+  @Rol('ADMIN')
+  @Post(':id/cierre-formal')
+  async cierreFormal(
+    @Param('id', ParseIntPipe) id: number,
+    @Query('empresaId', ParseIntPipe) empresaId: number,
+    @Req() req: any,
+  ) {
+    return this.periodosContablesService.cierreFormal(id, empresaId, req.user.id)
   }
 }

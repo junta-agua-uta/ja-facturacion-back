@@ -6,6 +6,7 @@ import { InvoiceInputDto } from 'src/facturacion-electronica/interfaces/invoice.
 import { ElectronicInvoiceService } from 'src/facturacion-electronica/services/electronic-invoice.service'
 import { TotalWithTaxDto } from 'src/facturacion-electronica/interfaces/invoice-info.dto'
 import { DateUtil } from 'src/common/utils/date.util'
+import { AsientoAutomaticoService } from 'src/asientos/asiento-automatico.service'
 
 @Injectable()
 export class AgregarFacturaService {
@@ -13,6 +14,7 @@ export class AgregarFacturaService {
     private readonly prisma: PrismaClient,
     private readonly generateInvoiceService: GenerateInvoiceService,
     private readonly electronicInvoiceService: ElectronicInvoiceService,
+    private readonly asientoAutomaticoService: AsientoAutomaticoService,
   ) { }
 
   async agregarFactura(datos: CrearFacturaDto) {
@@ -129,6 +131,28 @@ export class AgregarFacturaService {
             FECHA_AUTORIZACION: DateUtil.getCurrentDate(),
           },
         })
+
+        // Generar asiento contable automático para la factura autorizada
+        try {
+          await this.asientoAutomaticoService.generarAsientoAutomatico({
+            tipoTransaccion: 'FACTURA_VENTA',
+            empresaId: 1,
+            usuarioId: datos.idUsuario,
+            fecha: DateUtil.getCurrentDate(),
+            montoBase: datos.valorSinImpuesto,
+            montoIva: ivaFinal,
+            montoTotal: totalGeneral,
+            concepto: `Factura de Venta ${dtoFactura.infoFactura.guiaRemision} - ${facturaCreada.cliente.RAZON_SOCIAL}`,
+            referencia: dtoFactura.infoFactura.guiaRemision,
+            facturaId: facturaCreada.ID,
+          })
+          Logger.log(`Asiento contable generado para factura ID: ${facturaCreada.ID}`)
+        } catch (asientoError) {
+          Logger.warn(
+            `No se pudo generar el asiento contable para la factura ID: ${facturaCreada.ID}. ` +
+            `Razón: ${asientoError.message}. La factura fue autorizada correctamente.`,
+          )
+        }
       }
 
       return {

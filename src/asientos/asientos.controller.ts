@@ -9,16 +9,25 @@ import {
 	Body,
 	Query,
 	Patch,
+	UseGuards,
+	Req,
 } from '@nestjs/common'
-import { ApiBody, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger'
+import { ApiBearerAuth, ApiBody, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger'
 import { EstadoAsiento } from '@prisma/client'
 import { AsientosService } from './asientos.service'
+import { AsientoAutomaticoService } from './asiento-automatico.service'
 import { CreateAsientoDto } from './dto/create-asiento.dto'
+import { AuthGuard } from '../auth/guards/auth.guard'
+import { RoleGuard } from '../auth/guards/role.guard'
+import { Rol } from '../common/decorators/role.decorator'
 
 @ApiTags('Asientos')
 @Controller('asientos')
 export class AsientosController {
-	constructor(private readonly asientosService: AsientosService) {}
+	constructor(
+		private readonly asientosService: AsientosService,
+		private readonly asientoAutomaticoService: AsientoAutomaticoService,
+	) {}
 
 	@ApiOperation({ summary: 'Listar asientos con filtros' })
 	@ApiQuery({ name: 'page', required: false, type: Number })
@@ -75,5 +84,118 @@ export class AsientosController {
 		@Body() data: any,
 	) {
 		return this.asientosService.actualizarAsiento(id, data)
+	}
+
+	@ApiOperation({ summary: 'Aprobar múltiples asientos en lote (solo CONTADOR)' })
+	@ApiBearerAuth('access-token')
+	@ApiBody({
+		schema: {
+			type: 'object',
+			properties: {
+				asientoIds: {
+					type: 'array',
+					items: { type: 'number' },
+					example: [1, 2, 3],
+					description: 'IDs de los asientos a aprobar',
+				},
+			},
+		},
+	})
+	@UseGuards(AuthGuard, RoleGuard)
+	@Rol('CONTADOR')
+	@Patch('aprobar-lote')
+	async aprobarAsientosEnLote(
+		@Body() body: { asientoIds: number[] },
+		@Req() req: any,
+	) {
+		return this.asientosService.aprobarAsientosEnLote(body.asientoIds, req.user.id)
+	}
+
+	@ApiOperation({ summary: 'Aprobar un asiento contable (solo CONTADOR)' })
+	@ApiBearerAuth('access-token')
+	@UseGuards(AuthGuard, RoleGuard)
+	@Rol('CONTADOR')
+	@Patch(':id/aprobar')
+	async aprobarAsiento(
+		@Param('id', ParseIntPipe) id: number,
+		@Req() req: any,
+	) {
+		return this.asientosService.aprobarAsiento(id, req.user.id)
+	}
+
+	@ApiOperation({ summary: 'Agrupar facturas del día en un solo asiento' })
+	@ApiBearerAuth('access-token')
+	@ApiBody({
+		schema: {
+			type: 'object',
+			properties: {
+				fecha: { type: 'string', format: 'date', example: '2024-06-15' },
+				empresaId: { type: 'number', example: 1 },
+			},
+		},
+	})
+	@UseGuards(AuthGuard, RoleGuard)
+	@Rol('CONTADOR')
+	@Post('agrupar/dia')
+	async agruparPorDia(@Body() body: { fecha: string; empresaId?: number }, @Req() req: any) {
+		return this.asientoAutomaticoService.agruparAsientosPorDia(
+			new Date(body.fecha),
+			body.empresaId || 1,
+			req.user.id,
+		)
+	}
+
+	@ApiOperation({ summary: 'Agrupar facturas de un cliente en un solo asiento' })
+	@ApiBearerAuth('access-token')
+	@ApiBody({
+		schema: {
+			type: 'object',
+			properties: {
+				clienteId: { type: 'number', example: 1 },
+				empresaId: { type: 'number', example: 1 },
+				fechaInicio: { type: 'string', format: 'date', example: '2024-01-01' },
+				fechaFin: { type: 'string', format: 'date', example: '2024-12-31' },
+			},
+		},
+	})
+	@UseGuards(AuthGuard, RoleGuard)
+	@Rol('CONTADOR')
+	@Post('agrupar/cliente')
+	async agruparPorCliente(
+		@Body() body: { clienteId: number; empresaId?: number; fechaInicio?: string; fechaFin?: string },
+		@Req() req: any,
+	) {
+		return this.asientoAutomaticoService.agruparAsientosPorCliente(
+			body.clienteId,
+			body.empresaId || 1,
+			req.user.id,
+			body.fechaInicio ? new Date(body.fechaInicio) : undefined,
+			body.fechaFin ? new Date(body.fechaFin) : undefined,
+		)
+	}
+
+	@ApiOperation({ summary: 'Agrupar facturas de un período contable en un solo asiento' })
+	@ApiBearerAuth('access-token')
+	@ApiBody({
+		schema: {
+			type: 'object',
+			properties: {
+				periodoId: { type: 'number', example: 1 },
+				empresaId: { type: 'number', example: 1 },
+			},
+		},
+	})
+	@UseGuards(AuthGuard, RoleGuard)
+	@Rol('CONTADOR')
+	@Post('agrupar/periodo')
+	async agruparPorPeriodo(
+		@Body() body: { periodoId: number; empresaId?: number },
+		@Req() req: any,
+	) {
+		return this.asientoAutomaticoService.agruparAsientosPorPeriodo(
+			body.periodoId,
+			body.empresaId || 1,
+			req.user.id,
+		)
 	}
 }

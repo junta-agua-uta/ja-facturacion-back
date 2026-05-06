@@ -5,10 +5,14 @@ import {
 } from '@nestjs/common'
 import { EstadoAsiento, PrismaClient } from '@prisma/client'
 import { CreateAsientoDto } from './dto/create-asiento.dto'
+import { AuditoriaService } from '../common/services/auditoria.service'
 
 @Injectable()
 export class AsientosService {
-	constructor(private readonly prisma: PrismaClient) {}
+	constructor(
+		private readonly prisma: PrismaClient,
+		private readonly auditoriaService: AuditoriaService,
+	) {}
 
 	async listarAsientos(
 		page: number,
@@ -305,5 +309,107 @@ export class AsientosService {
 				include: { detallesAsiento: true },
 			})
 		})
+	}
+
+	/**
+	 * Aprueba un asiento contable.
+	 * Reglas:
+	 * - El asiento debe existir
+	 * - El período debe estar ABIERTO
+	 * - El asiento debe estar en estado PENDIENTE
+	 * - El asiento debe estar cuadrado (descuadre == 0)
+	 * - Solo usuarios con rol CONTADOR pueden aprobar (validado por guard)
+	 */
+	async aprobarAsiento(asientoId: number, aprobadoPorId: number) {
+		const asiento = await this.prisma.asiento.findUnique({
+			where: { id: asientoId },
+			include: { periodo: true },
+		})
+
+		if (!asiento) {
+			throw new NotFoundException('Asiento contable no encontrado.')
+		}
+
+		if (asiento.periodo.estado === 'CERRADO') {
+			throw new BadRequestException(
+				'Acción denegada: No se puede aprobar un asiento perteneciente a un periodo contable CERRADO.',
+			)
+		}
+
+		if (asiento.estado === 'APROBADO') {
+			throw new BadRequestException(
+				'El asiento ya se encuentra en estado APROBADO.',
+			)
+		}
+
+		if (Number(asiento.descuadre) > 0) {
+			throw new BadRequestException(
+				`Asiento descuadrado: El descuadre actual es de $${Number(asiento.descuadre).toFixed(2)}. Corrija las líneas de detalle antes de aprobar.`,
+			)
+		}
+
+		const resultado = await this.prisma.asiento.update({
+			where: { id: asientoId },
+			data: {
+				estado: 'APROBADO',
+				aprobadoPorId,
+				fechaAprobacion: new Date(),
+			},
+			include: {
+				periodo: true,
+				detallesAsiento: {
+					orderBy: { no: 'asc' },
+					include: { cuenta: true },
+				},
+				creadoPor: {
+					select: { ID: true, NOMBRE: true, APELLIDO: true, ROL: true },
+				},
+				aprobadoPor: {
+					select: { ID: true, NOMBRE: true, APELLIDO: true, ROL: true },
+				},
+			},
+		})
+
+		// Registro manual de auditoría para operación sensible
+		await this.auditoriaService.registrar({
+			usuarioId: aprobadoPorId,
+			accion: 'APROBAR_ASIENTO',
+			entidad: 'Asiento',
+			entidadId: asientoId,
+			datosPrevios: { estado: 'PENDIENTE' },
+			datosNuevos: { estado: 'APROBADO', aprobadoPorId, fechaAprobacion: resultado.fechaAprobacion },
+		})
+
+		return resultado
+	}
+
+	/**
+	 * Aprueba múltiples asientos en lote.
+	 * Valida cada uno individualmente y retorna resumen de éxitos/fallos.
+	 */
+	async aprobarAsientosEnLote(asientoIds: number[], aprobadoPorId: number) {
+		const resultados: { aprobados: number[]; fallidos: { id: number; error: string }[] } = {
+			aprobados: [],
+			fallidos: [],
+		}
+
+		for (const id of asientoIds) {
+			try {
+				await this.aprobarAsiento(id, aprobadoPorId)
+				resultados.aprobados.push(id)
+			} catch (error) {
+				resultados.fallidos.push({
+					id,
+					error: error.message || 'Error desconocido',
+				})
+			}
+		}
+
+		return {
+			totalProcesados: asientoIds.length,
+			totalAprobados: resultados.aprobados.length,
+			totalFallidos: resultados.fallidos.length,
+			...resultados,
+		}
 	}
 }
