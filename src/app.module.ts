@@ -16,6 +16,7 @@ import { ReportesModule } from './reportes/reportes.module'
 import { EmpresaModule } from './empresa/empresa.module'
 import { ConfigAsientosAutoModule } from './config-asientos-auto/config-asientos-auto.module'
 import { UsersModule } from './users/users.module'
+import { AbonosModule } from './abonos/abonos.module'
 
 @Module({
   imports: [
@@ -36,6 +37,7 @@ import { UsersModule } from './users/users.module'
     EmpresaModule,
     ConfigAsientosAutoModule,
     UsersModule,
+    AbonosModule,
   ],
 
   controllers: [],
