@@ -21,14 +21,14 @@ export class AbonosService {
       throw new NotFoundException('La cuenta especificada no existe.');
     }
 
-    // Calcular siguiente código de abono (ej: AB-00001)
+
     const ultimoAbono = await this.prisma.aBONOS.findFirst({
       orderBy: { ID: 'desc' },
     });
     const siguienteId = ultimoAbono ? ultimoAbono.ID + 1 : 1;
     const codigoAbono = `AB-${String(siguienteId).padStart(5, '0')}`;
 
-    // 1. Crear el registro del Abono
+
     const abono = await this.prisma.aBONOS.create({
       data: {
         VALOR_ABONO: data.valorAbono,
@@ -45,7 +45,7 @@ export class AbonosService {
       },
     });
 
-    // 2. Generar el asiento contable de forma automática
+
     try {
       const tipoTransaccion = data.metodoPago === 'EFECTIVO' ? 'ABONO_EFECTIVO' : 'ABONO_TRANSFERENCIA';
 
@@ -64,7 +64,7 @@ export class AbonosService {
 
       this.logger.log(`Asiento contable automático generado para el abono ID: ${abono.ID}`);
     } catch (error) {
-      // No bloqueamos la creación del abono si falla el asiento contable (ej. no hay periodo abierto, falta config)
+
       this.logger.warn(`El abono ${abono.ID} fue creado pero falló la generación del asiento: ${error.message}`);
     }
 

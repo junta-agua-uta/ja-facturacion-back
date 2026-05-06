@@ -18,6 +18,11 @@ export class RegisterService {
           HASH: registerAuth.hash!,
           SALT: registerAuth.salt!,
           ROL: registerAuth.rol,
+          empresas: {
+            create: {
+              empresaId: 1, // Empresa base por defecto
+            },
+          },
         },
       })
       .catch((error) => {
