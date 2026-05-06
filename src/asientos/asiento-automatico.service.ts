@@ -249,8 +249,10 @@ export class AsientoAutomaticoService {
 				break
 			}
 
-			case 'ABONO': {
-				// DEBE: Caja/Banco = Valor del abono
+			case 'ABONO':
+			case 'ABONO_EFECTIVO':
+			case 'ABONO_TRANSFERENCIA': {
+				// DEBE: Caja (efectivo) o Banco (transferencia) = Valor del abono
 				detalles.push({
 					codcta: config.cuentaDebe.codigo,
 					nombre: config.cuentaDebe.nombre,
@@ -275,7 +277,7 @@ export class AsientoAutomaticoService {
 			default:
 				throw new BadRequestException(
 					`Tipo de transacción "${datos.tipoTransaccion}" no tiene reglas contables definidas. ` +
-					`Tipos soportados: FACTURA_VENTA, ABONO.`,
+					`Tipos soportados: FACTURA_VENTA, ABONO, ABONO_EFECTIVO, ABONO_TRANSFERENCIA.`,
 				)
 		}
 
