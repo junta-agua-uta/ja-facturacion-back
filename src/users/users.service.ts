@@ -14,7 +14,11 @@ export class UsersService {
         take: limit,
         orderBy: { ID: 'desc' },
         include: {
-          empresa: true, // útil para frontend
+          empresas: {
+            include: {
+              empresa: true,
+            },
+          }, // útil para frontend
         },
       }),
     ])
@@ -35,7 +39,11 @@ export class UsersService {
   ) {
     const skip = (page - 1) * limit
 
-    const where = { empresaId }
+    const where = {
+      empresas: {
+        some: { empresaId },
+      },
+    }
 
     const [total, data] = await Promise.all([
       this.prisma.uSUARIOS.count({ where }),
@@ -45,7 +53,11 @@ export class UsersService {
         take: limit,
         orderBy: { ID: 'desc' },
         include: {
-          empresa: true,
+          empresas: {
+            include: {
+              empresa: true,
+            },
+          },
         },
       }),
     ])

@@ -22,24 +22,23 @@ model USUARIOS {
   FACTURAS       FACTURAS[]
 
   // --- MODULO CONTABLE ---
-  empresaId         Int            @default(1)
-  empresa           Empresa        @relation(fields: [empresaId], references: [id])
-  asientosCreados   Asiento[]      @relation("AsientosCreados")
-  asientosAprobados Asiento[]      @relation("AsientosAprobados")
+  empresas          UsuarioEmpresa[]
+  asientosCreados   Asiento[]        @relation("AsientosCreados")
+  asientosAprobados Asiento[]        @relation("AsientosAprobados")
   auditoriaLogs     AuditoriaLog[]
 
   @@map("usuarios")
 }
 
 model CLIENTES {
-  ID               Int         @id @default(autoincrement())
-  IDENTIFICACION   String      @unique(map: "clientes_IDENTIFICACION_key")
+  ID               Int              @id @default(autoincrement())
+  IDENTIFICACION   String           @unique(map: "clientes_IDENTIFICACION_key")
   RAZON_SOCIAL     String
   NOMBRE_COMERCIAL String?
   DIRECCION        String
   TELEFONO1        String
   TELEFONO2        String?
-  CORREO           String?     @default("tiolucasoswaldo1967@gmail.com")
+  CORREO           String?          @default("tiolucasoswaldo1967@gmail.com")
   TARIFA           String?
   GRUPO            String?
   ZONA             String?
@@ -49,10 +48,11 @@ model CLIENTES {
   PROVINCIA        String?
   CIUDAD           String?
   PARROQUIA        String?
-  FECHA_CREACION   DateTime?   @default(now())
+  FECHA_CREACION   DateTime?        @default(now())
   CUENTAS          CUENTAS[]
   FACTURAS         FACTURAS[]
   MEDIDORES        MEDIDORES[]
+  empresas         ClienteEmpresa[]
 
   @@map("clientes")
 }
@@ -329,7 +329,8 @@ model Empresa {
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
 
-  usuarios           USUARIOS[]
+  usuarios           UsuarioEmpresa[]
+  clientes           ClienteEmpresa[]
   periodosContables  PeriodoContable[]
   planesCuentas      PlanCuentas[]
   configAsientosAuto ConfigAsientoAuto[]
@@ -491,4 +492,30 @@ model AuditoriaLog {
   usuario   USUARIOS @relation(fields: [usuarioId], references: [ID])
 
   @@map("auditoria_logs")
+}
+
+model UsuarioEmpresa {
+  id        Int      @id @default(autoincrement())
+  usuarioId Int
+  empresaId Int
+  createdAt DateTime @default(now())
+
+  usuario USUARIOS @relation(fields: [usuarioId], references: [ID])
+  empresa Empresa  @relation(fields: [empresaId], references: [id])
+
+  @@unique([usuarioId, empresaId])
+  @@map("usuario_empresa")
+}
+
+model ClienteEmpresa {
+  id        Int      @id @default(autoincrement())
+  clienteId Int
+  empresaId Int
+  createdAt DateTime @default(now())
+
+  cliente CLIENTES @relation(fields: [clienteId], references: [ID])
+  empresa Empresa  @relation(fields: [empresaId], references: [id])
+
+  @@unique([clienteId, empresaId])
+  @@map("cliente_empresa")
 }
