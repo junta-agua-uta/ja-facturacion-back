@@ -132,6 +132,23 @@ export class AgregarFacturaService {
           },
         })
 
+        // Generar Cuenta por Cobrar si es a Crédito
+        if (datos.tipoPago === 'CREDITO') {
+          try {
+            await this.prisma.cUENTAS.create({
+              data: {
+                VALOR: totalGeneral,
+                ESTADO: 'ACTIVA',
+                ID_CLIENTE: datos.idCliente,
+              },
+            });
+            Logger.log(`Cuenta por cobrar (Deuda) generada automáticamente para la factura ID: ${facturaCreada.ID}`);
+          } catch (cuentaError) {
+            Logger.warn(`No se pudo generar la cuenta por cobrar para la factura ID: ${facturaCreada.ID}. Razón: ${cuentaError.message}`);
+          }
+        }
+
+
         // Generar asiento contable automático para la factura autorizada
         try {
           const empresaId = 1; // Empresa default actual
