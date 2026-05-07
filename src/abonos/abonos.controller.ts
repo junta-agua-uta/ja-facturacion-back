@@ -23,4 +23,18 @@ export class AbonosController {
   async listarAbonosDeCuenta(@Param('idCuenta', ParseIntPipe) idCuenta: number) {
     return this.abonosService.listarAbonosDeCuenta(idCuenta);
   }
+
+  @Get('cuentas/activas')
+  @ApiOperation({ summary: 'Listar todas las cuentas con saldo pendiente (ACTIVA)' })
+  @ApiResponse({ status: 200, description: 'Lista de cuentas pendientes obtenida correctamente.' })
+  async obtenerCuentasPendientes() {
+    return this.abonosService.obtenerCuentasPendientes();
+  }
+
+  @Get('cuentas/cliente/:idCliente')
+  @ApiOperation({ summary: 'Listar todas las cuentas de un cliente específico' })
+  @ApiResponse({ status: 200, description: 'Lista de cuentas del cliente obtenida correctamente.' })
+  async obtenerCuentasPorCliente(@Param('idCliente', ParseIntPipe) idCliente: number) {
+    return this.abonosService.obtenerCuentasPorCliente(idCliente);
+  }
 }

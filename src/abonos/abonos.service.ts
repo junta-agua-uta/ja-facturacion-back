@@ -10,7 +10,7 @@ export class AbonosService {
   constructor(
     private readonly prisma: PrismaClient,
     private readonly asientoAutomaticoService: AsientoAutomaticoService,
-  ) {}
+  ) { }
 
   async crearAbono(data: CreateAbonoDto) {
     const cuenta = await this.prisma.cUENTAS.findUnique({
@@ -44,6 +44,20 @@ export class AbonosService {
         },
       },
     });
+
+    // Validar si la suma de los abonos ya cubre el valor de la cuenta
+    const sumaAbonos = await this.prisma.aBONOS.aggregate({
+      where: { ID_CUENTA: data.idCuenta },
+      _sum: { VALOR_ABONO: true },
+    });
+    const totalAbonado = sumaAbonos._sum.VALOR_ABONO || 0;
+
+    if (totalAbonado >= (cuenta.VALOR || 0)) {
+      await this.prisma.cUENTAS.update({
+        where: { ID: data.idCuenta },
+        data: { ESTADO: 'PAGADA' },
+      });
+    }
 
 
     try {
@@ -88,6 +102,51 @@ export class AbonosService {
           select: { id: true, numero: true, estado: true, descuadre: true },
         },
       },
+    });
+  }
+
+  async obtenerCuentasPendientes() {
+    const cuentas = await this.prisma.cUENTAS.findMany({
+      where: { ESTADO: 'ACTIVA' },
+      include: {
+        cliente: {
+          select: { ID: true, RAZON_SOCIAL: true, IDENTIFICACION: true }
+        },
+        ABONOS: {
+          select: { VALOR_ABONO: true }
+        }
+      },
+      orderBy: { FECHA_EMISION: 'desc' }
+    });
+
+    return cuentas.map((cuenta: any) => {
+      const totalAbonado = cuenta.ABONOS?.reduce((sum: number, abono: any) => sum + (Number(abono.VALOR_ABONO) || 0), 0) || 0;
+      return {
+        ...cuenta,
+        totalAbonado,
+        saldoPendiente: (Number(cuenta.VALOR) || 0) - totalAbonado
+      };
+    });
+  }
+
+  async obtenerCuentasPorCliente(idCliente: number) {
+    const cuentas = await this.prisma.cUENTAS.findMany({
+      where: { ID_CLIENTE: idCliente },
+      include: {
+        ABONOS: {
+          select: { VALOR_ABONO: true }
+        }
+      },
+      orderBy: { FECHA_EMISION: 'desc' }
+    });
+
+    return cuentas.map((cuenta: any) => {
+      const totalAbonado = cuenta.ABONOS?.reduce((sum: number, abono: any) => sum + (Number(abono.VALOR_ABONO) || 0), 0) || 0;
+      return {
+        ...cuenta,
+        totalAbonado,
+        saldoPendiente: (Number(cuenta.VALOR) || 0) - totalAbonado
+      };
     });
   }
 }
