@@ -1,5 +1,5 @@
 import { IsEmail, IsOptional, IsString, MaxLength, IsEnum } from 'class-validator'
-import { ApiProperty } from '@nestjs/swagger'
+import { IsEcuadorRuc } from 'src/common/decorators/ecuadorian-ruc.decorator'
 
 export class UpdateEmpresaDto {
   @IsOptional()
@@ -15,6 +15,7 @@ export class UpdateEmpresaDto {
   @IsOptional()
   @IsString()
   @MaxLength(191)
+  @IsEcuadorRuc({ message: 'El RUC registrado no es válido' })
   ruc?: string
 
   @IsOptional()
