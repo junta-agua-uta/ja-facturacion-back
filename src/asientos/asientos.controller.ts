@@ -12,8 +12,15 @@ import {
 	UseGuards,
 	Req,
 	Res,
+	Logger,
 } from '@nestjs/common'
-import { ApiBearerAuth, ApiBody, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger'
+import {
+	ApiBearerAuth,
+	ApiBody,
+	ApiOperation,
+	ApiQuery,
+	ApiTags,
+} from '@nestjs/swagger'
 import { EstadoAsiento } from '@prisma/client'
 import { AsientosService } from './asientos.service'
 import { AsientoAutomaticoService } from './asiento-automatico.service'
@@ -31,7 +38,57 @@ export class AsientosController {
 		private readonly asientosService: AsientosService,
 		private readonly asientoAutomaticoService: AsientoAutomaticoService,
 		private readonly asientoPdfService: AsientoPdfService,
-	) {}
+	) { }
+
+	@ApiOperation({ summary: 'Aprobar múltiples asientos en lote (solo CONTADOR)' })
+	@ApiBearerAuth('access-token')
+	@ApiBody({ schema: { type: 'object', properties: { asientoIds: { type: 'array', items: { type: 'number' }, example: [1, 2, 3], description: 'IDs de los asientos a aprobar', }, }, }, })
+	@UseGuards(AuthGuard, RoleGuard)
+	@Rol('CONTADOR')
+	@Patch('aprobar-lote')
+	async aprobarAsientosEnLote(
+		@Body() body: { asientoIds: number[] },
+		@Req() req: any,
+	) {
+		return this.asientosService.aprobarAsientosEnLote(body.asientoIds, req.user.id)
+	}
+
+	@ApiOperation({ summary: 'Exportar Libro Diario en PDF' })
+	@ApiQuery({ name: 'empresaId', required: true, type: Number })
+	@ApiQuery({ name: 'estado', required: false, enum: EstadoAsiento })
+	@ApiQuery({ name: 'periodoId', required: false, type: Number })
+	@ApiQuery({ name: 'fechaInicio', required: false, type: String })
+	@ApiQuery({ name: 'fechaFin', required: false, type: String })
+	@Get('exportar/pdf')
+	async exportarLibroDiarioPdf(
+		@Query('empresaId', ParseIntPipe) empresaId: number,
+		@Res() res: Response,
+		@Query('estado') estado?: EstadoAsiento,
+		@Query('periodoId') periodoId?: string,
+		@Query('fechaInicio') fechaInicio?: string,
+		@Query('fechaFin') fechaFin?: string,
+	) {
+		Logger.log('empresaId:', empresaId)
+		Logger.log('estado:', estado)
+		Logger.log('periodoId:', periodoId)
+		Logger.log('fechaInicio:', fechaInicio)
+		Logger.log('fechaFin:', fechaFin)
+		const buffer = await this.asientoPdfService.generarPdfLibroDiario(
+			empresaId,
+			{
+				estado,
+				periodoId: periodoId ? Number(periodoId) : undefined,
+				fechaInicio: fechaInicio ? new Date(fechaInicio) : undefined,
+				fechaFin: fechaFin ? new Date(fechaFin) : undefined,
+			},
+		)
+		res.set({
+			'Content-Type': 'application/pdf',
+			'Content-Disposition': `attachment; filename="libro_diario.pdf"`,
+			'Content-Length': buffer.length,
+		})
+		res.end(buffer)
+	}
 
 	@ApiOperation({ summary: 'Listar asientos con filtros' })
 	@ApiQuery({ name: 'page', required: false, type: Number })
@@ -62,6 +119,29 @@ export class AsientosController {
 		)
 	}
 
+	@ApiOperation({ summary: 'Obtener KPIs del Libro Diario' })
+	@ApiQuery({ name: 'empresaId', required: true, type: Number })
+	@ApiQuery({ name: 'estado', required: false, enum: EstadoAsiento })
+	@ApiQuery({ name: 'periodoId', required: false, type: Number })
+	@ApiQuery({ name: 'fechaInicio', required: false, type: String })
+	@ApiQuery({ name: 'fechaFin', required: false, type: String })
+	@Get('kpis')
+	async obtenerKpis(
+		@Query('empresaId', ParseIntPipe) empresaId: number,
+		@Query('estado') estado?: EstadoAsiento,
+		@Query('periodoId') periodoId?: string,
+		@Query('fechaInicio') fechaInicio?: string,
+		@Query('fechaFin') fechaFin?: string,
+	) {
+		return this.asientosService.obtenerKpis(
+			empresaId,
+			estado,
+			periodoId ? Number(periodoId) : undefined,
+			fechaInicio ? new Date(fechaInicio) : undefined,
+			fechaFin ? new Date(fechaFin) : undefined,
+		)
+	}
+
 	@ApiOperation({ summary: 'Obtener asiento con detalles' })
 	@Get(':id')
 	async obtenerAsiento(@Param('id', ParseIntPipe) id: number) {
@@ -87,32 +167,8 @@ export class AsientosController {
 		@Param('id', ParseIntPipe) id: number,
 		@Body() data: any,
 	) {
+		Logger.log('Actualizando asiento', id)
 		return this.asientosService.actualizarAsiento(id, data)
-	}
-
-	@ApiOperation({ summary: 'Aprobar múltiples asientos en lote (solo CONTADOR)' })
-	@ApiBearerAuth('access-token')
-	@ApiBody({
-		schema: {
-			type: 'object',
-			properties: {
-				asientoIds: {
-					type: 'array',
-					items: { type: 'number' },
-					example: [1, 2, 3],
-					description: 'IDs de los asientos a aprobar',
-				},
-			},
-		},
-	})
-	@UseGuards(AuthGuard, RoleGuard)
-	@Rol('CONTADOR')
-	@Patch('aprobar-lote')
-	async aprobarAsientosEnLote(
-		@Body() body: { asientoIds: number[] },
-		@Req() req: any,
-	) {
-		return this.asientosService.aprobarAsientosEnLote(body.asientoIds, req.user.id)
 	}
 
 	@ApiOperation({ summary: 'Aprobar un asiento contable (solo CONTADOR)' })
@@ -120,10 +176,7 @@ export class AsientosController {
 	@UseGuards(AuthGuard, RoleGuard)
 	@Rol('CONTADOR')
 	@Patch(':id/aprobar')
-	async aprobarAsiento(
-		@Param('id', ParseIntPipe) id: number,
-		@Req() req: any,
-	) {
+	async aprobarAsiento(@Param('id', ParseIntPipe) id: number, @Req() req: any) {
 		return this.asientosService.aprobarAsiento(id, req.user.id)
 	}
 
@@ -141,7 +194,10 @@ export class AsientosController {
 	@UseGuards(AuthGuard, RoleGuard)
 	@Rol('CONTADOR')
 	@Post('agrupar/dia')
-	async agruparPorDia(@Body() body: { fecha: string; empresaId?: number }, @Req() req: any) {
+	async agruparPorDia(
+		@Body() body: { fecha: string; empresaId?: number },
+		@Req() req: any,
+	) {
 		return this.asientoAutomaticoService.agruparAsientosPorDia(
 			new Date(body.fecha),
 			body.empresaId || 1,
@@ -149,7 +205,9 @@ export class AsientosController {
 		)
 	}
 
-	@ApiOperation({ summary: 'Agrupar facturas de un cliente en un solo asiento' })
+	@ApiOperation({
+		summary: 'Agrupar facturas de un cliente en un solo asiento',
+	})
 	@ApiBearerAuth('access-token')
 	@ApiBody({
 		schema: {
@@ -166,7 +224,13 @@ export class AsientosController {
 	@Rol('CONTADOR')
 	@Post('agrupar/cliente')
 	async agruparPorCliente(
-		@Body() body: { clienteId: number; empresaId?: number; fechaInicio?: string; fechaFin?: string },
+		@Body()
+		body: {
+			clienteId: number
+			empresaId?: number
+			fechaInicio?: string
+			fechaFin?: string
+		},
 		@Req() req: any,
 	) {
 		return this.asientoAutomaticoService.agruparAsientosPorCliente(
@@ -178,7 +242,9 @@ export class AsientosController {
 		)
 	}
 
-	@ApiOperation({ summary: 'Agrupar facturas de un período contable en un solo asiento' })
+	@ApiOperation({
+		summary: 'Agrupar facturas de un período contable en un solo asiento',
+	})
 	@ApiBearerAuth('access-token')
 	@ApiBody({
 		schema: {
@@ -208,15 +274,22 @@ export class AsientosController {
 	@Get(':id/pdf')
 	async descargarPdf(
 		@Param('id', ParseIntPipe) id: number,
-		@Query('empresaId', new DefaultValuePipe('1'), ParseIntPipe) empresaId: number,
+		@Query('empresaId', new DefaultValuePipe('1'), ParseIntPipe)
+		empresaId: number,
 		@Res() res: Response,
 	) {
-		const buffer = await this.asientoPdfService.generarPdfAsiento(id, empresaId);
+		const buffer = await this.asientoPdfService.generarPdfAsiento(id, empresaId)
 		res.set({
 			'Content-Type': 'application/pdf',
 			'Content-Disposition': `attachment; filename="comprobante_diario_${id}.pdf"`,
 			'Content-Length': buffer.length,
-		});
-		res.end(buffer);
+		})
+		res.end(buffer)
+	}
+
+	@ApiOperation({ summary: 'Obtener facturas de un asiento' })
+	@Get(':id/facturas')
+	async obtenerFacturasPorAsiento(@Param('id', ParseIntPipe) id: number) {
+		return this.asientosService.obtenerFacturasPorAsiento(id)
 	}
 }

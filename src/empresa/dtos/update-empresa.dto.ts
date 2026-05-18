@@ -1,3 +1,4 @@
+import { ApiProperty } from '@nestjs/swagger'
 import { IsEmail, IsOptional, IsString, MaxLength, IsEnum } from 'class-validator'
 import { IsEcuadorRuc } from 'src/common/decorators/ecuadorian-ruc.decorator'
 
@@ -43,7 +44,11 @@ export class UpdateEmpresaDto {
   @MaxLength(191)
   logo?: string
 
-  @ApiProperty({ description: 'Modo de generación de asientos de facturas', enum: ['INDIVIDUAL', 'DIARIO', 'MENSUAL'], required: false })
+  @ApiProperty({
+    description: 'Modo de generación de asientos de facturas',
+    enum: ['INDIVIDUAL', 'DIARIO', 'MENSUAL'],
+    required: false,
+  })
   @IsOptional()
   @IsEnum(['INDIVIDUAL', 'DIARIO', 'MENSUAL'])
   modoAsientos?: string

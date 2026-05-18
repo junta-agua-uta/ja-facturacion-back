@@ -170,6 +170,35 @@ async function seedConfigAsientos(codigoToId: Record<string, number>) {
   }
 }
 
+async function seedUsuariosEmpresa() {
+  console.log('\n👥 Sembrando Asociación de Usuarios con Empresa...');
+  
+  const usuarios = await prisma.uSUARIOS.findMany();
+  
+  if (usuarios.length === 0) {
+    console.log('   ⚠️ No se encontraron usuarios en la base de datos.');
+    return;
+  }
+
+  for (const usuario of usuarios) {
+    await prisma.usuarioEmpresa.upsert({
+      where: {
+        usuarioId_empresaId: {
+          usuarioId: usuario.ID,
+          empresaId: EMPRESA_ID,
+        },
+      },
+      update: {},
+      create: {
+        usuarioId: usuario.ID,
+        empresaId: EMPRESA_ID,
+      },
+    });
+  }
+
+  console.log(`   ✅ Se asociaron ${usuarios.length} usuarios a la empresa ID: ${EMPRESA_ID}`);
+}
+
 async function main() {
   console.log('\n════════════════════════════════════════════════════════');
   console.log('  SEED: MÓDULO CONTABLE - JUNTA DE AGUA POTABLE');
@@ -178,6 +207,7 @@ async function main() {
 
   const codigoToId = await seedPlanCuentas();
   await seedConfigAsientos(codigoToId);
+  await seedUsuariosEmpresa();
 
   console.log('\n════════════════════════════════════════════════════════');
   console.log('  ✅ Seed completado exitosamente.');

@@ -12,7 +12,7 @@ export class AsientosService {
 	constructor(
 		private readonly prisma: PrismaClient,
 		private readonly auditoriaService: AuditoriaService,
-	) {}
+	) { }
 
 	async listarAsientos(
 		page: number,
@@ -31,15 +31,15 @@ export class AsientosService {
 			...(creadoPorId ? { creadoPorId } : {}),
 			...(fechaInicio || fechaFin
 				? {
-						fecha: {
-							...(fechaInicio ? { gte: fechaInicio } : {}),
-							...(fechaFin ? { lte: fechaFin } : {}),
-						},
-					}
+					fecha: {
+						...(fechaInicio ? { gte: fechaInicio } : {}),
+						...(fechaFin ? { lte: fechaFin } : {}),
+					},
+				}
 				: {}),
 		}
 
-		const [total, data] = await Promise.all([
+		const [total, rawData] = await Promise.all([
 			this.prisma.asiento.count({ where }),
 			this.prisma.asiento.findMany({
 				where,
@@ -54,9 +54,25 @@ export class AsientosService {
 					aprobadoPor: {
 						select: { ID: true, NOMBRE: true, APELLIDO: true, ROL: true },
 					},
+					detallesAsiento: { select: { debe: true, haber: true } },
 				},
 			}),
 		])
+
+		const data = rawData.map(asiento => {
+			let totalDebe = 0;
+			let totalHaber = 0;
+			asiento.detallesAsiento.forEach(det => {
+				totalDebe += Number(det.debe);
+				totalHaber += Number(det.haber);
+			});
+			const { detallesAsiento, ...rest } = asiento;
+			return {
+				...rest,
+				totalDebe,
+				totalHaber,
+			};
+		});
 
 		return {
 			page,
@@ -193,7 +209,7 @@ export class AsientosService {
 				modelo: data.modelo,
 				comprobante: data.comprobante,
 				descuadre: descuadre,
-				estado: 'PENDIENTE', 
+				estado: 'PENDIENTE',
 				periodoId: data.periodoId,
 				creadoPorId: data.creadoPorId,
 				detallesAsiento: {
@@ -410,6 +426,77 @@ export class AsientosService {
 			totalAprobados: resultados.aprobados.length,
 			totalFallidos: resultados.fallidos.length,
 			...resultados,
+		}
+	}
+
+	/**
+	 * Obtiene las facturas asociadas a un asiento contable.
+	 */
+	async obtenerFacturasPorAsiento(asientoId: number) {
+		const asiento = await this.prisma.asiento.findUnique({
+			where: { id: asientoId },
+		})
+
+		if (!asiento) {
+			throw new NotFoundException('Asiento contable no encontrado')
+		}
+
+		return this.prisma.facturaAsiento.findMany({
+			where: { asientoId },
+			include: {
+				factura: {
+					include: {
+						cliente: true,
+						medidor: true,
+						sucursal: true,
+						usuario: {
+							select: { ID: true, NOMBRE: true, APELLIDO: true, ROL: true },
+						},
+					},
+				},
+			},
+		})
+	}
+
+	/**
+	 * Obtiene KPIs del Libro Diario (total, cuadrados, descuadrados, etc.)
+	 */
+	async obtenerKpis(
+		empresaId: number,
+		estado?: EstadoAsiento,
+		periodoId?: number,
+		fechaInicio?: Date,
+		fechaFin?: Date,
+	) {
+		const where = {
+			periodo: { empresaId },
+			...(estado ? { estado } : {}),
+			...(periodoId ? { periodoId } : {}),
+			...(fechaInicio || fechaFin
+				? {
+					fecha: {
+						...(fechaInicio ? { gte: fechaInicio } : {}),
+						...(fechaFin ? { lte: fechaFin } : {}),
+					},
+				}
+				: {}),
+		}
+
+		const [totalAsientos, asientosCuadrados, asientosDescuadrados, totalMovimientos] = await Promise.all([
+			this.prisma.asiento.count({ where }),
+			this.prisma.asiento.count({ where: { ...where, descuadre: 0 } }),
+			this.prisma.asiento.count({ where: { ...where, descuadre: { not: 0 } } }),
+			this.prisma.detalleAsiento.count({ where: { asiento: where } }),
+		]);
+
+		const porcentajeCuadrados = totalAsientos > 0 ? (asientosCuadrados / totalAsientos) * 100 : 0;
+
+		return {
+			totalAsientos,
+			asientosCuadrados,
+			asientosDescuadrados,
+			totalMovimientos,
+			porcentajeCuadrados,
 		}
 	}
 }

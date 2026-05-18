@@ -3,13 +3,16 @@ import {
   Controller,
   DefaultValuePipe,
   Get,
+  Param,
   ParseIntPipe,
   Post,
+  Put,
   Query,
 } from '@nestjs/common'
 import { ApiBody, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger'
 import { PlanCuentasService } from './plan-cuentas.service'
 import { CreatePlanCuentaDto } from './dtos/create-plan-cuenta.dto'
+import { UpdatePlanCuentaDto } from './dtos/update-plan-cuenta.dto'
 
 @ApiTags('Plan Cuentas')
 @Controller('plan-cuentas')
@@ -65,5 +68,18 @@ export class PlanCuentasController {
     @Body() data: CreatePlanCuentaDto,
   ) {
     return this.planCuentasService.crearCuenta(empresaId, data)
+  }
+
+  @ApiOperation({ summary: 'Editar una cuenta contable existente' })
+  @ApiQuery({ name: 'empresaId', required: false, type: Number })
+  @ApiBody({ type: UpdatePlanCuentaDto })
+  @Put(':id')
+  async editarCuenta(
+    @Param('id', ParseIntPipe) id: number,
+    @Query('empresaId', new DefaultValuePipe('1'), ParseIntPipe)
+    empresaId: number,
+    @Body() data: UpdatePlanCuentaDto,
+  ) {
+    return this.planCuentasService.editarCuenta(id, empresaId, data)
   }
 }

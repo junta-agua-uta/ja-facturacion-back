@@ -119,4 +119,130 @@ export class AsientoPdfService {
       }
     });
   }
+
+  async generarPdfLibroDiario(empresaId: number, filtros: { estado?: string, periodoId?: number, fechaInicio?: Date, fechaFin?: Date }): Promise<Buffer> {
+    const where: any = {
+      periodo: { empresaId },
+      ...(filtros.estado ? { estado: filtros.estado } : {}),
+      ...(filtros.periodoId ? { periodoId: filtros.periodoId } : {}),
+      ...(filtros.fechaInicio || filtros.fechaFin
+        ? {
+            fecha: {
+              ...(filtros.fechaInicio ? { gte: filtros.fechaInicio } : {}),
+              ...(filtros.fechaFin ? { lte: filtros.fechaFin } : {}),
+            },
+          }
+        : {}),
+    };
+
+    const asientos = await this.prisma.asiento.findMany({
+      where,
+      orderBy: [{ fecha: 'asc' }, { numero: 'asc' }],
+      include: {
+        detallesAsiento: { orderBy: { no: 'asc' } },
+        periodo: true,
+      },
+    });
+
+    const empresa = await this.prisma.empresa.findUnique({ where: { id: empresaId } });
+
+    return new Promise((resolve, reject) => {
+      try {
+        const doc = new PDFDocument({ size: 'A4', margin: 40 });
+        const buffers: Buffer[] = [];
+
+        doc.on('data', (chunk) => buffers.push(chunk));
+        doc.on('end', () => resolve(Buffer.concat(buffers)));
+
+        // Encabezado global
+        doc.fontSize(16).text(empresa?.nombre || 'Empresa Generica', { align: 'center', bold: true });
+        doc.fontSize(10).text(`RUC: ${empresa?.ruc || '9999999999001'}`, { align: 'center' });
+        doc.moveDown(1);
+        doc.fontSize(14).text('LIBRO DIARIO', { align: 'center', bold: true });
+        if (filtros.fechaInicio && filtros.fechaFin) {
+            doc.fontSize(10).text(`Desde: ${filtros.fechaInicio.toISOString().split('T')[0]} Hasta: ${filtros.fechaFin.toISOString().split('T')[0]}`, { align: 'center' });
+        }
+        doc.moveDown(2);
+
+        let totalGeneralDebe = 0;
+        let totalGeneralHaber = 0;
+
+        asientos.forEach(asiento => {
+            const startX = 40;
+            // Asegurar que haya espacio
+            if (doc.y > 700) { doc.addPage(); }
+
+            doc.font('Helvetica-Bold').fontSize(10);
+            doc.text(`Fecha: ${asiento.fecha.toISOString().split('T')[0]} | Asiento No: ${asiento.numero} | Concepto: ${asiento.concepto}`, startX, doc.y, { width: 500 });
+            doc.moveDown(0.5);
+
+            // Cabeceras tabla
+            doc.text('CÓDIGO', startX, doc.y, { width: 80 });
+            doc.text('CUENTA', startX + 80, doc.y, { width: 170 });
+            doc.text('REF.', startX + 260, doc.y, { width: 60 });
+            doc.text('DEBE', startX + 330, doc.y, { width: 80, align: 'right' });
+            doc.text('HABER', startX + 420, doc.y, { width: 80, align: 'right' });
+            doc.moveDown(0.2);
+            doc.moveTo(startX, doc.y).lineTo(540, doc.y).stroke();
+            doc.moveDown(0.5);
+
+            let sumDebe = 0;
+            let sumHaber = 0;
+
+            doc.font('Helvetica').fontSize(9);
+            asiento.detallesAsiento.forEach(detalle => {
+                if (doc.y > 750) {
+                    doc.addPage();
+                    doc.font('Helvetica-Bold').fontSize(10);
+                    // repetir cabecera
+                    doc.text('CÓDIGO', startX, doc.y, { width: 80 });
+                    doc.text('CUENTA', startX + 80, doc.y, { width: 170 });
+                    doc.text('REF.', startX + 260, doc.y, { width: 60 });
+                    doc.text('DEBE', startX + 330, doc.y, { width: 80, align: 'right' });
+                    doc.text('HABER', startX + 420, doc.y, { width: 80, align: 'right' });
+                    doc.moveDown(0.2);
+                    doc.moveTo(startX, doc.y).lineTo(540, doc.y).stroke();
+                    doc.moveDown(0.5);
+                    doc.font('Helvetica').fontSize(9);
+                }
+                const yRow = doc.y;
+                doc.text(detalle.codcta, startX, yRow, { width: 80 });
+                doc.text(detalle.nombre, startX + 80, yRow, { width: 170 });
+                doc.text(detalle.referencia || '', startX + 260, yRow, { width: 60 });
+                doc.text(Number(detalle.debe).toFixed(2), startX + 330, yRow, { width: 80, align: 'right' });
+                doc.text(Number(detalle.haber).toFixed(2), startX + 420, yRow, { width: 80, align: 'right' });
+                
+                sumDebe += Number(detalle.debe);
+                sumHaber += Number(detalle.haber);
+                doc.moveDown(0.5);
+            });
+
+            doc.moveDown(0.2);
+            doc.moveTo(startX + 300, doc.y).lineTo(540, doc.y).stroke();
+            doc.moveDown(0.5);
+            doc.font('Helvetica-Bold');
+            const ySub = doc.y;
+            doc.text('Subtotal Asiento:', startX + 150, ySub);
+            doc.text(sumDebe.toFixed(2), startX + 330, ySub, { width: 80, align: 'right' });
+            doc.text(sumHaber.toFixed(2), startX + 420, ySub, { width: 80, align: 'right' });
+            doc.moveDown(2);
+
+            totalGeneralDebe += sumDebe;
+            totalGeneralHaber += sumHaber;
+        });
+
+        if (doc.y > 700) { doc.addPage(); }
+        doc.moveDown(1);
+        const yTotal = doc.y;
+        doc.font('Helvetica-Bold').fontSize(12);
+        doc.text('TOTAL GENERAL:', 40 + 150, yTotal);
+        doc.text(totalGeneralDebe.toFixed(2), 40 + 330, yTotal, { width: 80, align: 'right' });
+        doc.text(totalGeneralHaber.toFixed(2), 40 + 420, yTotal, { width: 80, align: 'right' });
+
+        doc.end();
+      } catch (error) {
+        reject(error);
+      }
+    });
+  }
 }
