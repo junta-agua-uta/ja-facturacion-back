@@ -10,6 +10,9 @@ import { LibroMayorExcelService } from './services/libro-mayor-excel.service';
 import { BalanceComprobacionService } from './services/balance-comprobacion.service';
 import { BalanceComprobacionPdfService } from './services/balance-comprobacion-pdf.service';
 import { BalanceComprobacionExcelService } from './services/balance-comprobacion-excel.service';
+import { BalanceGeneralService } from './services/balance-general.service';
+import { BalanceGeneralExcelService } from './services/balance-general-excel.service';
+import { BalanceGeneralPdfService } from './services/balance-general-pdf.service';
 
 @Module({
   controllers: [ReportesController],
@@ -21,7 +24,10 @@ import { BalanceComprobacionExcelService } from './services/balance-comprobacion
     LibroMayorExcelService,
     BalanceComprobacionService,
     BalanceComprobacionPdfService,
-    BalanceComprobacionExcelService
+    BalanceComprobacionExcelService,
+    BalanceGeneralService,
+    BalanceGeneralExcelService,
+    BalanceGeneralPdfService,
   ]
 })
 export class ReportesModule { }

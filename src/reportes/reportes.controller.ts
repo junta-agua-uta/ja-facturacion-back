@@ -28,6 +28,9 @@ import { FiltrosDetalleCuentaDto } from './dtos/filtros-detalle-cuenta.dto';
 import { BalanceComprobacionService } from './services/balance-comprobacion.service';
 import { BalanceComprobacionPdfService } from './services/balance-comprobacion-pdf.service';
 import { BalanceComprobacionExcelService } from './services/balance-comprobacion-excel.service';
+import { BalanceGeneralService } from './services/balance-general.service';
+import { BalanceGeneralExcelService } from './services/balance-general-excel.service';
+import { BalanceGeneralPdfService } from './services/balance-general-pdf.service';
 
 @ApiTags('Reportes')
 @Controller('reportes')
@@ -38,7 +41,10 @@ export class ReportesController {
         private readonly libroMayorExcelService: LibroMayorExcelService,
         private readonly balanceComprobacionService: BalanceComprobacionService,
         private readonly balanceComprobacionPdfService: BalanceComprobacionPdfService,
-        private readonly balanceComprobacionExcelService: BalanceComprobacionExcelService
+        private readonly balanceComprobacionExcelService: BalanceComprobacionExcelService,
+        private readonly balanceGeneralService: BalanceGeneralService,
+        private readonly balanceGeneralExcelService: BalanceGeneralExcelService,
+        private readonly balanceGeneralPdfService: BalanceGeneralPdfService,
     ) { }
 
     @ApiOperation({ summary: 'Obtener resumen del Libro Mayor' })
@@ -278,5 +284,104 @@ export class ReportesController {
         });
 
         res.end(buffer);
+    }
+
+    // En ReportesController, agregar:
+
+    // =========================
+    // 📊 BALANCE GENERAL EXCEL
+    // =========================
+    @ApiOperation({ summary: 'Exportar Balance General en Excel' })
+    @ApiBody({ type: FiltrosReporteDto })
+    @Post('balance-general/excel')
+    async generarBalanceGeneralExcel(
+        @Body() filtrosDto: FiltrosReporteDto,
+        @Res() res: Response,
+    ) {
+        Logger.log('📊 Generando Balance General Excel', 'ReportesController');
+
+        const filtros = {
+            empresaId: filtrosDto.empresaId,
+            periodoId: filtrosDto.periodoId,
+            fechaInicio: filtrosDto.fechaInicio
+                ? new Date(filtrosDto.fechaInicio)
+                : undefined,
+            fechaFin: filtrosDto.fechaFin
+                ? new Date(filtrosDto.fechaFin)
+                : undefined,
+        };
+
+        const buffer = await this.balanceGeneralExcelService.generarExcelBalanceGeneral(filtros);
+
+        res.set({
+            'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'Content-Disposition': 'attachment; filename="balance-general.xlsx"',
+            'Content-Length': buffer.length,
+        });
+
+        res.end(buffer);
+    }
+
+    // =========================
+    // 📄 BALANCE GENERAL PDF
+    // =========================
+    @ApiOperation({ summary: 'Exportar Balance General en PDF' })
+    @ApiBody({ type: FiltrosReporteDto })
+    @Post('balance-general/pdf')
+    async generarBalanceGeneralPdf(
+        @Body() filtrosDto: FiltrosReporteDto,
+        @Res() res: Response,
+    ) {
+        Logger.log('📄 Generando Balance General PDF', 'ReportesController');
+
+        const filtros = {
+            empresaId: filtrosDto.empresaId,
+            periodoId: filtrosDto.periodoId,
+            fechaInicio: filtrosDto.fechaInicio
+                ? new Date(filtrosDto.fechaInicio)
+                : undefined,
+            fechaFin: filtrosDto.fechaFin
+                ? new Date(filtrosDto.fechaFin)
+                : undefined,
+        };
+
+        const data = await this.balanceGeneralService.getBalanceGeneral(filtros);
+
+        const pdfBuffer = await this.balanceGeneralPdfService.generarPdfBalanceGeneral(
+            filtros.empresaId,
+            data,
+            filtros,
+        );
+
+        res.set({
+            'Content-Type': 'application/pdf',
+            'Content-Disposition': 'attachment; filename="balance-general.pdf"',
+            'Content-Length': pdfBuffer.length,
+        });
+
+        res.end(pdfBuffer);
+    }
+
+    // =========================
+    // 📋 BALANCE GENERAL JSON (opcional)
+    // =========================
+    @ApiOperation({ summary: 'Obtener Balance General en JSON' })
+    @ApiBody({ type: FiltrosReporteDto })
+    @Post('balance-general')
+    async obtenerBalanceGeneral(
+        @Body() filtrosDto: FiltrosReporteDto,
+    ) {
+        const filtros = {
+            empresaId: filtrosDto.empresaId,
+            periodoId: filtrosDto.periodoId,
+            fechaInicio: filtrosDto.fechaInicio
+                ? new Date(filtrosDto.fechaInicio)
+                : undefined,
+            fechaFin: filtrosDto.fechaFin
+                ? new Date(filtrosDto.fechaFin)
+                : undefined,
+        };
+
+        return this.balanceGeneralService.getBalanceGeneral(filtros);
     }
 }
