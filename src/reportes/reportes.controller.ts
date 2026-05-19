@@ -25,6 +25,9 @@ import { AuthGuard } from '../auth/guards/auth.guard';
 import { RoleGuard } from '../auth/guards/role.guard';
 import { Rol } from '../common/decorators/role.decorator';
 import { FiltrosDetalleCuentaDto } from './dtos/filtros-detalle-cuenta.dto';
+import { BalanceComprobacionService } from './services/balance-comprobacion.service';
+import { BalanceComprobacionPdfService } from './services/balance-comprobacion-pdf.service';
+import { BalanceComprobacionExcelService } from './services/balance-comprobacion-excel.service';
 
 @ApiTags('Reportes')
 @Controller('reportes')
@@ -33,6 +36,9 @@ export class ReportesController {
         private readonly libroMayorService: LibroMayorService,
         private readonly libroMayorPdfService: LibroMayorPdfService,
         private readonly libroMayorExcelService: LibroMayorExcelService,
+        private readonly balanceComprobacionService: BalanceComprobacionService,
+        private readonly balanceComprobacionPdfService: BalanceComprobacionPdfService,
+        private readonly balanceComprobacionExcelService: BalanceComprobacionExcelService
     ) { }
 
     @ApiOperation({ summary: 'Obtener resumen del Libro Mayor' })
@@ -187,6 +193,87 @@ export class ReportesController {
                 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
             'Content-Disposition':
                 'attachment; filename="libro-mayor.xlsx"',
+            'Content-Length': buffer.length,
+        });
+
+        res.end(buffer);
+    }
+
+    /** LIBRO MAYOR */
+    @ApiOperation({ summary: 'Obtener Balance de Comprobación' })
+    // @ApiBearerAuth('access-token')
+    @ApiBody({ type: FiltrosReporteDto })
+    // @UseGuards(AuthGuard, RoleGuard)
+    // @Rol('CONTADOR')
+    @Post('balance-comprobacion')
+    async obtenerBalance(
+        @Body() filtrosDto: FiltrosReporteDto,
+    ) {
+        const filtros = {
+            empresaId: filtrosDto.empresaId,
+            periodoId: filtrosDto.periodoId,
+            fechaInicio: filtrosDto.fechaInicio ? new Date(filtrosDto.fechaInicio) : undefined,
+            fechaFin: filtrosDto.fechaFin ? new Date(filtrosDto.fechaFin) : undefined,
+        };
+
+        return this.balanceComprobacionService.getBalance(filtros);
+    }
+    @ApiOperation({ summary: 'Exportar Balance de Comprobación en PDF' })
+    // @ApiBearerAuth('access-token')
+    @ApiBody({ type: FiltrosReporteDto })
+    // @UseGuards(AuthGuard, RoleGuard)
+    // @Rol('CONTADOR')
+    @Post('balance-comprobacion/pdf')
+    async exportarBalancePdf(
+        @Body() filtrosDto: FiltrosReporteDto,
+        @Res() res: Response,
+    ) {
+        const filtros = {
+            empresaId: filtrosDto.empresaId,
+            periodoId: filtrosDto.periodoId,
+            fechaInicio: filtrosDto.fechaInicio ? new Date(filtrosDto.fechaInicio) : undefined,
+            fechaFin: filtrosDto.fechaFin ? new Date(filtrosDto.fechaFin) : undefined,
+        };
+
+        const data = await this.balanceComprobacionService.getBalance(filtros);
+
+        const buffer = await this.balanceComprobacionPdfService.generarPdfBalanceComprobacion(
+            filtros.empresaId,
+            data,
+            filtros,
+        );
+
+        res.set({
+            'Content-Type': 'application/pdf',
+            'Content-Disposition': 'attachment; filename="balance-comprobacion.pdf"',
+            'Content-Length': buffer.length,
+        });
+
+        res.end(buffer);
+    }
+
+    @ApiOperation({ summary: 'Exportar Balance de Comprobación en Excel' })
+    // @ApiBearerAuth('access-token')
+    @ApiBody({ type: FiltrosReporteDto })
+    // @UseGuards(AuthGuard, RoleGuard)
+    // @Rol('CONTADOR')
+    @Post('balance-comprobacion/excel')
+    async exportarBalanceExcel(
+        @Body() filtrosDto: FiltrosReporteDto,
+        @Res() res: Response,
+    ) {
+        const filtros = {
+            empresaId: filtrosDto.empresaId,
+            periodoId: filtrosDto.periodoId,
+            fechaInicio: filtrosDto.fechaInicio ? new Date(filtrosDto.fechaInicio) : undefined,
+            fechaFin: filtrosDto.fechaFin ? new Date(filtrosDto.fechaFin) : undefined,
+        };
+
+        const buffer = await this.balanceComprobacionExcelService.generarExcelBalanceComprobacion(filtros);
+
+        res.set({
+            'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'Content-Disposition': 'attachment; filename="balance-comprobacion.xlsx"',
             'Content-Length': buffer.length,
         });
 
