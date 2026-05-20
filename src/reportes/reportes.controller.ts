@@ -40,6 +40,9 @@ import { CarteraClientesPdfService } from './services/cartera-clientes-pdf.servi
 import { FiltrosCarteraClientesDto } from './dtos/filtros-cartera-clientes.dto';
 
 @ApiTags('Reportes')
+@ApiBearerAuth('access-token')
+@UseGuards(AuthGuard, RoleGuard)
+@Rol('ADMIN', 'CONTADOR', 'OPERADOR')
 @Controller('reportes')
 export class ReportesController {
     constructor(

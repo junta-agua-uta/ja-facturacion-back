@@ -62,7 +62,8 @@ export class AsientosService {
 		const data = rawData.map(asiento => {
 			let totalDebe = 0;
 			let totalHaber = 0;
-			asiento.detallesAsiento.forEach(det => {
+			const detalles = asiento.detallesAsiento ?? []
+			detalles.forEach(det => {
 				totalDebe += Number(det.debe);
 				totalHaber += Number(det.haber);
 			});
@@ -110,10 +111,10 @@ export class AsientosService {
 		return asiento
 	}
 
-	async eliminarAsiento(id: number) {
+	async eliminarAsiento(id: number, eliminadoPorId?: number) {
 		const asiento = await this.prisma.asiento.findUnique({
 			where: { id },
-			include: { periodo: true },
+			include: { periodo: true, detallesAsiento: true },
 		})
 
 		if (!asiento) {
@@ -141,6 +142,17 @@ export class AsientosService {
 			}),
 			this.prisma.asiento.delete({ where: { id } }),
 		])
+
+		if (eliminadoPorId) {
+			await this.auditoriaService.registrar({
+				usuarioId: eliminadoPorId,
+				accion: 'ELIMINAR_ASIENTO',
+				entidad: 'Asiento',
+				entidadId: id,
+				datosPrevios: asiento,
+				datosNuevos: { eliminado: true },
+			})
+		}
 
 		return { message: 'Asiento eliminado correctamente' }
 	}
