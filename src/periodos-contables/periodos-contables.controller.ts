@@ -26,6 +26,8 @@ import { RoleGuard } from '../auth/guards/role.guard'
 import { Rol } from '../common/decorators/role.decorator'
 
 @ApiTags('Periodos Contables')
+@ApiBearerAuth('access-token')
+@UseGuards(AuthGuard, RoleGuard)
 @Controller('periodos-contables')
 export class PeriodosContablesController {
   constructor(
@@ -37,6 +39,7 @@ export class PeriodosContablesController {
   @ApiQuery({ name: 'limit', required: false, type: Number })
   @ApiQuery({ name: 'empresaId', required: false, type: Number })
   @ApiQuery({ name: 'estado', required: false, enum: EstadoPeriodo })
+  @Rol('ADMIN', 'CONTADOR', 'OPERADOR')
   @Get()
   async listarPeriodos(
     @Query('page', new DefaultValuePipe('1'), ParseIntPipe) page: number,
@@ -60,15 +63,18 @@ export class PeriodosContablesController {
     description: 'ID de la empresa',
     type: Number,
   })
-  @ApiBearerAuth('access-token')
-  @UseGuards(AuthGuard, RoleGuard)
   @Rol('CONTADOR')
   @Patch(':id/cerrar')
   async cerrarPeriodo(
     @Param('id', ParseIntPipe) id: number,
     @Query('empresaId', ParseIntPipe) empresaId: number,
+    @Req() req: any,
   ) {
-    return this.periodosContablesService.bloquearPeriodo(id, empresaId)
+    return this.periodosContablesService.bloquearPeriodo(
+      id,
+      empresaId,
+      req.user.id,
+    )
   }
 
   @ApiOperation({ summary: 'Reabrir periodo contable' })
@@ -78,15 +84,18 @@ export class PeriodosContablesController {
     description: 'ID de la empresa',
     type: Number,
   })
-  @ApiBearerAuth('access-token')
-  @UseGuards(AuthGuard, RoleGuard)
-  @Rol('ADMIN')
+  @Rol('CONTADOR')
   @Patch(':id/abrir')
   async abrirPeriodo(
     @Param('id', ParseIntPipe) id: number,
     @Query('empresaId', ParseIntPipe) empresaId: number,
+    @Req() req: any,
   ) {
-    return this.periodosContablesService.desbloquearPeriodo(id, empresaId)
+    return this.periodosContablesService.desbloquearPeriodo(
+      id,
+      empresaId,
+      req.user.id,
+    )
   }
 
   @ApiOperation({ summary: 'Crear periodo contable' })
@@ -105,8 +114,6 @@ export class PeriodosContablesController {
       },
     },
   })
-  @ApiBearerAuth('access-token')
-  @UseGuards(AuthGuard, RoleGuard)
   @Rol('CONTADOR')
   @Post()
   async crearPeriodo(
@@ -119,9 +126,7 @@ export class PeriodosContablesController {
   @ApiOperation({ summary: 'Cierre contable formal (genera asiento de cierre + bloquea período)' })
   @ApiParam({ name: 'id', description: 'ID del periodo', type: Number })
   @ApiQuery({ name: 'empresaId', description: 'ID de la empresa', type: Number })
-  @ApiBearerAuth('access-token')
-  @UseGuards(AuthGuard, RoleGuard)
-  @Rol('ADMIN')
+  @Rol('CONTADOR')
   @Post(':id/cierre-formal')
   async cierreFormal(
     @Param('id', ParseIntPipe) id: number,

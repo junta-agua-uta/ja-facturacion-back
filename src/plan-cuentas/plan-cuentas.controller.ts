@@ -8,13 +8,25 @@ import {
   Post,
   Put,
   Query,
+  UseGuards,
 } from '@nestjs/common'
-import { ApiBody, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger'
+import {
+  ApiBearerAuth,
+  ApiBody,
+  ApiOperation,
+  ApiQuery,
+  ApiTags,
+} from '@nestjs/swagger'
 import { PlanCuentasService } from './plan-cuentas.service'
 import { CreatePlanCuentaDto } from './dtos/create-plan-cuenta.dto'
 import { UpdatePlanCuentaDto } from './dtos/update-plan-cuenta.dto'
+import { AuthGuard } from '../auth/guards/auth.guard'
+import { RoleGuard } from '../auth/guards/role.guard'
+import { Rol } from '../common/decorators/role.decorator'
 
 @ApiTags('Plan Cuentas')
+@ApiBearerAuth('access-token')
+@UseGuards(AuthGuard, RoleGuard)
 @Controller('plan-cuentas')
 export class PlanCuentasController {
   constructor(private readonly planCuentasService: PlanCuentasService) {}
@@ -28,6 +40,7 @@ export class PlanCuentasController {
     enum: ['plano', 'arbol'],
   })
   @ApiQuery({ name: 'empresaId', required: false, type: Number })
+  @Rol('ADMIN', 'CONTADOR', 'OPERADOR')
   @Get()
   async listarCuentas(
     @Query('page', new DefaultValuePipe('1'), ParseIntPipe) page: number,
@@ -48,6 +61,7 @@ export class PlanCuentasController {
   @ApiQuery({ name: 'q', required: true, type: String })
   @ApiQuery({ name: 'empresaId', required: false, type: Number })
   @ApiQuery({ name: 'limit', required: false, type: Number })
+  @Rol('ADMIN', 'CONTADOR', 'OPERADOR')
   @Get('buscar')
   async buscarCuenta(
     @Query('q') termino: string,
@@ -61,6 +75,7 @@ export class PlanCuentasController {
   @ApiOperation({ summary: 'Crear una nueva cuenta contable' })
   @ApiQuery({ name: 'empresaId', required: false, type: Number })
   @ApiBody({ type: CreatePlanCuentaDto })
+  @Rol('ADMIN', 'CONTADOR')
   @Post()
   async crearCuenta(
     @Query('empresaId', new DefaultValuePipe('1'), ParseIntPipe)
@@ -73,6 +88,7 @@ export class PlanCuentasController {
   @ApiOperation({ summary: 'Editar una cuenta contable existente' })
   @ApiQuery({ name: 'empresaId', required: false, type: Number })
   @ApiBody({ type: UpdatePlanCuentaDto })
+  @Rol('ADMIN', 'CONTADOR')
   @Put(':id')
   async editarCuenta(
     @Param('id', ParseIntPipe) id: number,

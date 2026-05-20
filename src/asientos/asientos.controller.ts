@@ -32,6 +32,8 @@ import { AsientoPdfService } from './services/asiento-pdf.service'
 import { Response } from 'express'
 
 @ApiTags('Asientos')
+@ApiBearerAuth('access-token')
+@UseGuards(AuthGuard, RoleGuard)
 @Controller('asientos')
 export class AsientosController {
 	constructor(
@@ -59,6 +61,7 @@ export class AsientosController {
 	@ApiQuery({ name: 'periodoId', required: false, type: Number })
 	@ApiQuery({ name: 'fechaInicio', required: false, type: String })
 	@ApiQuery({ name: 'fechaFin', required: false, type: String })
+	@Rol('ADMIN', 'CONTADOR', 'OPERADOR')
 	@Get('exportar/pdf')
 	async exportarLibroDiarioPdf(
 		@Query('empresaId', ParseIntPipe) empresaId: number,
@@ -98,6 +101,7 @@ export class AsientosController {
 	@ApiQuery({ name: 'creadoPorId', required: false, type: Number })
 	@ApiQuery({ name: 'fechaInicio', required: false, type: String })
 	@ApiQuery({ name: 'fechaFin', required: false, type: String })
+	@Rol('ADMIN', 'CONTADOR', 'OPERADOR')
 	@Get()
 	async listarAsientos(
 		@Query('page', new DefaultValuePipe('1'), ParseIntPipe) page: number,
@@ -125,6 +129,7 @@ export class AsientosController {
 	@ApiQuery({ name: 'periodoId', required: false, type: Number })
 	@ApiQuery({ name: 'fechaInicio', required: false, type: String })
 	@ApiQuery({ name: 'fechaFin', required: false, type: String })
+	@Rol('ADMIN', 'CONTADOR', 'OPERADOR')
 	@Get('kpis')
 	async obtenerKpis(
 		@Query('empresaId', ParseIntPipe) empresaId: number,
@@ -143,25 +148,32 @@ export class AsientosController {
 	}
 
 	@ApiOperation({ summary: 'Obtener asiento con detalles' })
+	@Rol('ADMIN', 'CONTADOR', 'OPERADOR')
 	@Get(':id')
 	async obtenerAsiento(@Param('id', ParseIntPipe) id: number) {
 		return this.asientosService.obtenerAsientoConDetalles(id)
 	}
 
 	@ApiOperation({ summary: 'Eliminar asiento' })
+	@Rol('CONTADOR')
 	@Delete(':id')
-	async eliminarAsiento(@Param('id', ParseIntPipe) id: number) {
-		return this.asientosService.eliminarAsiento(id)
+	async eliminarAsiento(@Param('id', ParseIntPipe) id: number, @Req() req: any) {
+		return this.asientosService.eliminarAsiento(id, req.user.id)
 	}
 
 	@ApiOperation({ summary: 'Crear un nuevo asiento contable' })
 	@ApiBody({ type: CreateAsientoDto })
+	@Rol('ADMIN', 'CONTADOR', 'OPERADOR')
 	@Post()
-	async crearAsiento(@Body() data: CreateAsientoDto) {
-		return this.asientosService.crearAsiento(data)
+	async crearAsiento(@Body() data: CreateAsientoDto, @Req() req: any) {
+		return this.asientosService.crearAsiento({
+			...data,
+			creadoPorId: req.user.id,
+		})
 	}
 
 	@ApiOperation({ summary: 'Actualizar un asiento borrador existente' })
+	@Rol('CONTADOR')
 	@Patch(':id')
 	async actualizarAsiento(
 		@Param('id', ParseIntPipe) id: number,
@@ -271,6 +283,7 @@ export class AsientosController {
 
 	@ApiOperation({ summary: 'Descargar comprobante de diario (Asiento) en PDF' })
 	@ApiQuery({ name: 'empresaId', required: false, type: Number })
+	@Rol('ADMIN', 'CONTADOR', 'OPERADOR')
 	@Get(':id/pdf')
 	async descargarPdf(
 		@Param('id', ParseIntPipe) id: number,
@@ -288,6 +301,7 @@ export class AsientosController {
 	}
 
 	@ApiOperation({ summary: 'Obtener facturas de un asiento' })
+	@Rol('ADMIN', 'CONTADOR', 'OPERADOR')
 	@Get(':id/facturas')
 	async obtenerFacturasPorAsiento(@Param('id', ParseIntPipe) id: number) {
 		return this.asientosService.obtenerFacturasPorAsiento(id)

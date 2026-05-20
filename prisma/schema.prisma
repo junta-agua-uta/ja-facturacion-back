@@ -252,6 +252,7 @@ model DetalleLiquidacion {
 enum ROL {
   CONTADOR
   TESORERO
+  OPERADOR
   ADMIN
 }
 

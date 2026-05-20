@@ -77,7 +77,7 @@ export class PeriodosContablesService {
     })
   }
 
-  async bloquearPeriodo(periodoId: number, empresaId: number) {
+  async bloquearPeriodo(periodoId: number, empresaId: number, usuarioId?: number) {
     const periodo = await this.prisma.periodoContable.findUnique({
       where: { id: periodoId, empresaId },
     })
@@ -100,13 +100,26 @@ export class PeriodosContablesService {
       )
     }
 
-    return this.prisma.periodoContable.update({
+    const periodoCerrado = await this.prisma.periodoContable.update({
       where: { id: periodoId },
       data: { estado: 'CERRADO' },
     })
+
+    if (usuarioId) {
+      await this.auditoriaService.registrar({
+        usuarioId,
+        accion: 'BLOQUEAR_PERIODO',
+        entidad: 'PeriodoContable',
+        entidadId: periodoId,
+        datosPrevios: { estado: periodo.estado },
+        datosNuevos: { estado: periodoCerrado.estado },
+      })
+    }
+
+    return periodoCerrado
   }
 
-  async desbloquearPeriodo(periodoId: number, empresaId: number) {
+  async desbloquearPeriodo(periodoId: number, empresaId: number, usuarioId?: number) {
     const periodo = await this.prisma.periodoContable.findUnique({
       where: { id: periodoId, empresaId },
     })
@@ -119,10 +132,23 @@ export class PeriodosContablesService {
 
     if (periodo.estado === 'ABIERTO') return periodo
 
-    return this.prisma.periodoContable.update({
+    const periodoAbierto = await this.prisma.periodoContable.update({
       where: { id: periodoId },
       data: { estado: 'ABIERTO' },
     })
+
+    if (usuarioId) {
+      await this.auditoriaService.registrar({
+        usuarioId,
+        accion: 'DESBLOQUEAR_PERIODO',
+        entidad: 'PeriodoContable',
+        entidadId: periodoId,
+        datosPrevios: { estado: periodo.estado },
+        datosNuevos: { estado: periodoAbierto.estado },
+      })
+    }
+
+    return periodoAbierto
   }
 
   /**
@@ -158,6 +184,20 @@ export class PeriodosContablesService {
       throw new BadRequestException(
         `Pre-cierre fallido: Existen ${asientosPendientes} asientos en estado PENDIENTE. ` +
         `Apruebe o elimine todos los asientos antes del cierre formal.`,
+      )
+    }
+
+    const cierreExistente = await this.prisma.asiento.findFirst({
+      where: {
+        periodoId,
+        modelo: 'CIERRE',
+        comprobante: `CIERRE-${periodoId}`,
+      },
+    })
+
+    if (cierreExistente) {
+      throw new BadRequestException(
+        'El periodo ya posee un asiento de cierre formal registrado.',
       )
     }
 
@@ -277,6 +317,23 @@ export class PeriodosContablesService {
           haber: esUtilidad ? montoResultado : 0,
           cuentaId: cuentaDestino.id,
         })
+      }
+
+      const totalDebeCierre = detallesCierre.reduce(
+        (sum, detalle) => sum + Number(detalle.debe),
+        0,
+      )
+      const totalHaberCierre = detallesCierre.reduce(
+        (sum, detalle) => sum + Number(detalle.haber),
+        0,
+      )
+      const descuadreCierre =
+        Math.round(Math.abs(totalDebeCierre - totalHaberCierre) * 100) / 100
+
+      if (descuadreCierre > 0) {
+        throw new BadRequestException(
+          `El asiento de cierre se generÃ³ descuadrado por $${descuadreCierre.toFixed(2)}.`,
+        )
       }
 
       asientoCierre = await this.prisma.asiento.create({
