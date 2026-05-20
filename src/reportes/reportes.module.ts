@@ -13,6 +13,12 @@ import { BalanceComprobacionExcelService } from './services/balance-comprobacion
 import { BalanceGeneralService } from './services/balance-general.service';
 import { BalanceGeneralExcelService } from './services/balance-general-excel.service';
 import { BalanceGeneralPdfService } from './services/balance-general-pdf.service';
+import { EstadoResultadosService } from './services/estado-resultados.service';
+import { EstadoResultadosExcelService } from './services/estado-resultados-excel.service';
+import { EstadoResultadosPdfService } from './services/estado-resultados-pdf.service';
+import { CarteraClientesService } from './services/cartera-clientes.service';
+import { CarteraClientesExcelService } from './services/cartera-clientes-excel.service';
+import { CarteraClientesPdfService } from './services/cartera-clientes-pdf.service';
 
 @Module({
   controllers: [ReportesController],
@@ -28,6 +34,12 @@ import { BalanceGeneralPdfService } from './services/balance-general-pdf.service
     BalanceGeneralService,
     BalanceGeneralExcelService,
     BalanceGeneralPdfService,
+    EstadoResultadosService,
+    EstadoResultadosExcelService,
+    EstadoResultadosPdfService,
+    CarteraClientesService,
+    CarteraClientesExcelService,
+    CarteraClientesPdfService,
   ]
 })
 export class ReportesModule { }

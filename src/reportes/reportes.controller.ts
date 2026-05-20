@@ -31,6 +31,13 @@ import { BalanceComprobacionExcelService } from './services/balance-comprobacion
 import { BalanceGeneralService } from './services/balance-general.service';
 import { BalanceGeneralExcelService } from './services/balance-general-excel.service';
 import { BalanceGeneralPdfService } from './services/balance-general-pdf.service';
+import { EstadoResultadosService } from './services/estado-resultados.service';
+import { EstadoResultadosExcelService } from './services/estado-resultados-excel.service';
+import { EstadoResultadosPdfService } from './services/estado-resultados-pdf.service';
+import { CarteraClientesService } from './services/cartera-clientes.service';
+import { CarteraClientesExcelService } from './services/cartera-clientes-excel.service';
+import { CarteraClientesPdfService } from './services/cartera-clientes-pdf.service';
+import { FiltrosCarteraClientesDto } from './dtos/filtros-cartera-clientes.dto';
 
 @ApiTags('Reportes')
 @Controller('reportes')
@@ -45,6 +52,12 @@ export class ReportesController {
         private readonly balanceGeneralService: BalanceGeneralService,
         private readonly balanceGeneralExcelService: BalanceGeneralExcelService,
         private readonly balanceGeneralPdfService: BalanceGeneralPdfService,
+        private readonly estadoResultadosService: EstadoResultadosService,
+        private readonly estadoResultadosExcelService: EstadoResultadosExcelService,
+        private readonly estadoResultadosPdfService: EstadoResultadosPdfService,
+        private readonly carteraClientesService: CarteraClientesService,
+        private readonly carteraClientesExcelService: CarteraClientesExcelService,
+        private readonly carteraClientesPdfService: CarteraClientesPdfService,
     ) { }
 
     @ApiOperation({ summary: 'Obtener resumen del Libro Mayor' })
@@ -383,5 +396,202 @@ export class ReportesController {
         };
 
         return this.balanceGeneralService.getBalanceGeneral(filtros);
+    }
+
+    // En ReportesController, agregar:
+
+    // =========================
+    // 📊 ESTADO DE RESULTADOS EXCEL
+    // =========================
+    @ApiOperation({ summary: 'Exportar Estado de Resultados en Excel' })
+    @ApiBody({ type: FiltrosReporteDto })
+    @Post('estado-resultados/excel')
+    async generarEstadoResultadosExcel(
+        @Body() filtrosDto: FiltrosReporteDto,
+        @Res() res: Response,
+    ) {
+        Logger.log('📊 Generando Estado de Resultados Excel', 'ReportesController');
+
+        const filtros = {
+            empresaId: filtrosDto.empresaId,
+            periodoId: filtrosDto.periodoId,
+            fechaInicio: filtrosDto.fechaInicio
+                ? new Date(filtrosDto.fechaInicio)
+                : undefined,
+            fechaFin: filtrosDto.fechaFin
+                ? new Date(filtrosDto.fechaFin)
+                : undefined,
+        };
+
+        const buffer = await this.estadoResultadosExcelService.generarExcelEstadoResultados(filtros);
+
+        res.set({
+            'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'Content-Disposition': 'attachment; filename="estado-resultados.xlsx"',
+            'Content-Length': buffer.length,
+        });
+
+        res.end(buffer);
+    }
+
+    // =========================
+    // 📄 ESTADO DE RESULTADOS PDF
+    // =========================
+    @ApiOperation({ summary: 'Exportar Estado de Resultados en PDF' })
+    @ApiBody({ type: FiltrosReporteDto })
+    @Post('estado-resultados/pdf')
+    async generarEstadoResultadosPdf(
+        @Body() filtrosDto: FiltrosReporteDto,
+        @Res() res: Response,
+    ) {
+        Logger.log('📄 Generando Estado de Resultados PDF', 'ReportesController');
+
+        const filtros = {
+            empresaId: filtrosDto.empresaId,
+            periodoId: filtrosDto.periodoId,
+            fechaInicio: filtrosDto.fechaInicio
+                ? new Date(filtrosDto.fechaInicio)
+                : undefined,
+            fechaFin: filtrosDto.fechaFin
+                ? new Date(filtrosDto.fechaFin)
+                : undefined,
+        };
+
+        const data = await this.estadoResultadosService.getEstadoResultados(filtros);
+
+        const pdfBuffer = await this.estadoResultadosPdfService.generarPdfEstadoResultados(
+            filtros.empresaId,
+            data,
+            filtros,
+        );
+
+        res.set({
+            'Content-Type': 'application/pdf',
+            'Content-Disposition': 'attachment; filename="estado-resultados.pdf"',
+            'Content-Length': pdfBuffer.length,
+        });
+
+        res.end(pdfBuffer);
+    }
+
+    // =========================
+    // 📋 ESTADO DE RESULTADOS JSON (opcional)
+    // =========================
+    @ApiOperation({ summary: 'Obtener Estado de Resultados en JSON' })
+    @ApiBody({ type: FiltrosReporteDto })
+    @Post('estado-resultados')
+    async obtenerEstadoResultados(
+        @Body() filtrosDto: FiltrosReporteDto,
+    ) {
+        const filtros = {
+            empresaId: filtrosDto.empresaId,
+            periodoId: filtrosDto.periodoId,
+            fechaInicio: filtrosDto.fechaInicio
+                ? new Date(filtrosDto.fechaInicio)
+                : undefined,
+            fechaFin: filtrosDto.fechaFin
+                ? new Date(filtrosDto.fechaFin)
+                : undefined,
+        };
+
+        return this.estadoResultadosService.getEstadoResultados(filtros);
+    }
+    // En ReportesController, agregar:
+
+    // =========================
+    // 📊 CARTERA DE CLIENTES EXCEL
+    // =========================
+    @ApiOperation({ summary: 'Exportar Cartera de Clientes en Excel' })
+    @ApiBody({ type: FiltrosCarteraClientesDto })
+    @Post('cartera-clientes/excel')
+    async generarCarteraClientesExcel(
+        @Body() filtrosDto: FiltrosCarteraClientesDto,
+        @Res() res: Response,
+    ) {
+        Logger.log('📊 Generando Cartera de Clientes Excel', 'ReportesController');
+
+        const filtros = {
+            empresaId: filtrosDto.empresaId,
+            clienteId: filtrosDto.clienteId,
+            fechaInicio: filtrosDto.fechaInicio
+                ? new Date(filtrosDto.fechaInicio)
+                : undefined,
+            fechaFin: filtrosDto.fechaFin
+                ? new Date(filtrosDto.fechaFin)
+                : undefined,
+        };
+
+        const buffer = await this.carteraClientesExcelService.generarExcelCarteraClientes(filtros);
+
+        res.set({
+            'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'Content-Disposition': 'attachment; filename="cartera-clientes.xlsx"',
+            'Content-Length': buffer.length,
+        });
+
+        res.end(buffer);
+    }
+
+    // =========================
+    // 📄 CARTERA DE CLIENTES PDF
+    // =========================
+    @ApiOperation({ summary: 'Exportar Cartera de Clientes en PDF' })
+    @ApiBody({ type: FiltrosCarteraClientesDto })
+    @Post('cartera-clientes/pdf')
+    async generarCarteraClientesPdf(
+        @Body() filtrosDto: FiltrosCarteraClientesDto,
+        @Res() res: Response,
+    ) {
+        Logger.log('📄 Generando Cartera de Clientes PDF', 'ReportesController');
+
+        const filtros = {
+            empresaId: filtrosDto.empresaId,
+            clienteId: filtrosDto.clienteId,
+            fechaInicio: filtrosDto.fechaInicio
+                ? new Date(filtrosDto.fechaInicio)
+                : undefined,
+            fechaFin: filtrosDto.fechaFin
+                ? new Date(filtrosDto.fechaFin)
+                : undefined,
+        };
+
+        const data = await this.carteraClientesService.getCartera(filtros);
+
+        const pdfBuffer = await this.carteraClientesPdfService.generarPdfCarteraClientes(
+            filtros.empresaId,
+            data,
+            filtros,
+        );
+
+        res.set({
+            'Content-Type': 'application/pdf',
+            'Content-Disposition': 'attachment; filename="cartera-clientes.pdf"',
+            'Content-Length': pdfBuffer.length,
+        });
+
+        res.end(pdfBuffer);
+    }
+
+    // =========================
+    // 📋 CARTERA DE CLIENTES JSON (opcional)
+    // =========================
+    @ApiOperation({ summary: 'Obtener Cartera de Clientes en JSON' })
+    @ApiBody({ type: FiltrosCarteraClientesDto })
+    @Post('cartera-clientes')
+    async obtenerCarteraClientes(
+        @Body() filtrosDto: FiltrosCarteraClientesDto,
+    ) {
+        const filtros = {
+            empresaId: filtrosDto.empresaId,
+            clienteId: filtrosDto.clienteId,
+            fechaInicio: filtrosDto.fechaInicio
+                ? new Date(filtrosDto.fechaInicio)
+                : undefined,
+            fechaFin: filtrosDto.fechaFin
+                ? new Date(filtrosDto.fechaFin)
+                : undefined,
+        };
+
+        return this.carteraClientesService.getCartera(filtros);
     }
 }
