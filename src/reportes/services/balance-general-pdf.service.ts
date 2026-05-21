@@ -71,13 +71,15 @@ export class BalanceGeneralPdfService {
                 // Cabecera
                 doc.fontSize(9);
                 doc.font('Helvetica-Bold');
-                doc.text('Código', startX, doc.y, { width: colWidths.codigo });
-                doc.text('Cuenta', startX + colWidths.codigo, doc.y, { width: colWidths.cuenta });
-                doc.text('Saldo', startX + colWidths.codigo + colWidths.cuenta, doc.y, { width: colWidths.saldo, align: 'right' });
+                const headerY = doc.y;
+                doc.text('Código', startX, headerY, { width: colWidths.codigo });
+                doc.text('Cuenta', startX + colWidths.codigo, headerY, { width: colWidths.cuenta });
+                doc.text('Saldo', startX + colWidths.codigo + colWidths.cuenta, headerY, { width: colWidths.saldo, align: 'right' });
 
-                doc.moveDown(0.3);
-                doc.moveTo(startX, doc.y).lineTo(startX + colWidths.codigo + colWidths.cuenta + colWidths.saldo, doc.y).stroke();
-                doc.moveDown(0.5);
+                // línea horizontal en posición fija para consistencia
+                const headerLineY = headerY + 12;
+                doc.moveTo(startX, headerLineY).lineTo(startX + colWidths.codigo + colWidths.cuenta + colWidths.saldo, headerLineY).stroke();
+                doc.y = headerLineY + 6;
 
                 let totalActivos = 0;
                 doc.font('Helvetica');
@@ -87,12 +89,13 @@ export class BalanceGeneralPdfService {
                         doc.addPage();
                         // Re-dibujar cabecera
                         doc.font('Helvetica-Bold').fontSize(9);
-                        doc.text('Código', startX, doc.y, { width: colWidths.codigo });
-                        doc.text('Cuenta', startX + colWidths.codigo, doc.y, { width: colWidths.cuenta });
-                        doc.text('Saldo', startX + colWidths.codigo + colWidths.cuenta, doc.y, { width: colWidths.saldo, align: 'right' });
-                        doc.moveDown(0.3);
-                        doc.moveTo(startX, doc.y).lineTo(startX + colWidths.codigo + colWidths.cuenta + colWidths.saldo, doc.y).stroke();
-                        doc.moveDown(0.5);
+                        const headerY2 = doc.y;
+                        doc.text('Código', startX, headerY2, { width: colWidths.codigo });
+                        doc.text('Cuenta', startX + colWidths.codigo, headerY2, { width: colWidths.cuenta });
+                        doc.text('Saldo', startX + colWidths.codigo + colWidths.cuenta, headerY2, { width: colWidths.saldo, align: 'right' });
+                        const headerLineY2 = headerY2 + 12;
+                        doc.moveTo(startX, headerLineY2).lineTo(startX + colWidths.codigo + colWidths.cuenta + colWidths.saldo, headerLineY2).stroke();
+                        doc.y = headerLineY2 + 6;
                         doc.font('Helvetica');
                     }
 
@@ -111,8 +114,9 @@ export class BalanceGeneralPdfService {
                 doc.moveDown(0.3);
 
                 doc.font('Helvetica-Bold');
-                doc.text('TOTAL ACTIVOS', startX + colWidths.codigo + 50, doc.y);
-                doc.text(totalActivos.toFixed(2), startX + colWidths.codigo + colWidths.cuenta, doc.y, { width: colWidths.saldo, align: 'right' });
+                const yTotalActivos = doc.y; // usar Y fija para etiqueta y monto
+                doc.text('TOTAL ACTIVOS', startX + colWidths.codigo + 50, yTotalActivos);
+                doc.text(totalActivos.toFixed(2), startX + colWidths.codigo + colWidths.cuenta, yTotalActivos, { width: colWidths.saldo, align: 'right' });
 
                 doc.moveDown(1.5);
 
@@ -126,13 +130,13 @@ export class BalanceGeneralPdfService {
                 // Cabecera
                 doc.fontSize(9);
                 doc.font('Helvetica-Bold');
-                doc.text('Código', startX, doc.y, { width: colWidths.codigo });
-                doc.text('Cuenta', startX + colWidths.codigo, doc.y, { width: colWidths.cuenta });
-                doc.text('Saldo', startX + colWidths.codigo + colWidths.cuenta, doc.y, { width: colWidths.saldo, align: 'right' });
-
-                doc.moveDown(0.3);
-                doc.moveTo(startX, doc.y).lineTo(startX + colWidths.codigo + colWidths.cuenta + colWidths.saldo, doc.y).stroke();
-                doc.moveDown(0.5);
+                const headerYPasivos = doc.y;
+                doc.text('Código', startX, headerYPasivos, { width: colWidths.codigo });
+                doc.text('Cuenta', startX + colWidths.codigo, headerYPasivos, { width: colWidths.cuenta });
+                doc.text('Saldo', startX + colWidths.codigo + colWidths.cuenta, headerYPasivos, { width: colWidths.saldo, align: 'right' });
+                const headerLineYPas = headerYPasivos + 12;
+                doc.moveTo(startX, headerLineYPas).lineTo(startX + colWidths.codigo + colWidths.cuenta + colWidths.saldo, headerLineYPas).stroke();
+                doc.y = headerLineYPas + 6;
 
                 let totalPasivos = 0;
                 doc.font('Helvetica');
@@ -141,12 +145,13 @@ export class BalanceGeneralPdfService {
                     if (doc.y > 700) {
                         doc.addPage();
                         doc.font('Helvetica-Bold').fontSize(9);
-                        doc.text('Código', startX, doc.y, { width: colWidths.codigo });
-                        doc.text('Cuenta', startX + colWidths.codigo, doc.y, { width: colWidths.cuenta });
-                        doc.text('Saldo', startX + colWidths.codigo + colWidths.cuenta, doc.y, { width: colWidths.saldo, align: 'right' });
-                        doc.moveDown(0.3);
-                        doc.moveTo(startX, doc.y).lineTo(startX + colWidths.codigo + colWidths.cuenta + colWidths.saldo, doc.y).stroke();
-                        doc.moveDown(0.5);
+                        const headerYPasivos2 = doc.y;
+                        doc.text('Código', startX, headerYPasivos2, { width: colWidths.codigo });
+                        doc.text('Cuenta', startX + colWidths.codigo, headerYPasivos2, { width: colWidths.cuenta });
+                        doc.text('Saldo', startX + colWidths.codigo + colWidths.cuenta, headerYPasivos2, { width: colWidths.saldo, align: 'right' });
+                        const headerLineYPas2 = headerYPasivos2 + 12;
+                        doc.moveTo(startX, headerLineYPas2).lineTo(startX + colWidths.codigo + colWidths.cuenta + colWidths.saldo, headerLineYPas2).stroke();
+                        doc.y = headerLineYPas2 + 6;
                         doc.font('Helvetica');
                     }
 
@@ -165,8 +170,9 @@ export class BalanceGeneralPdfService {
                 doc.moveDown(0.3);
 
                 doc.font('Helvetica-Bold');
-                doc.text('TOTAL PASIVOS', startX + colWidths.codigo + 50, doc.y);
-                doc.text(totalPasivos.toFixed(2), startX + colWidths.codigo + colWidths.cuenta, doc.y, { width: colWidths.saldo, align: 'right' });
+                const yTotalPasivos = doc.y; // usar Y fija para etiqueta y monto
+                doc.text('TOTAL PASIVOS', startX + colWidths.codigo + 50, yTotalPasivos);
+                doc.text(totalPasivos.toFixed(2), startX + colWidths.codigo + colWidths.cuenta, yTotalPasivos, { width: colWidths.saldo, align: 'right' });
 
                 doc.moveDown(1.5);
 
@@ -180,13 +186,13 @@ export class BalanceGeneralPdfService {
                 // Cabecera
                 doc.fontSize(9);
                 doc.font('Helvetica-Bold');
-                doc.text('Código', startX, doc.y, { width: colWidths.codigo });
-                doc.text('Cuenta', startX + colWidths.codigo, doc.y, { width: colWidths.cuenta });
-                doc.text('Saldo', startX + colWidths.codigo + colWidths.cuenta, doc.y, { width: colWidths.saldo, align: 'right' });
-
-                doc.moveDown(0.3);
-                doc.moveTo(startX, doc.y).lineTo(startX + colWidths.codigo + colWidths.cuenta + colWidths.saldo, doc.y).stroke();
-                doc.moveDown(0.5);
+                const headerYPatrimonio = doc.y;
+                doc.text('Código', startX, headerYPatrimonio, { width: colWidths.codigo });
+                doc.text('Cuenta', startX + colWidths.codigo, headerYPatrimonio, { width: colWidths.cuenta });
+                doc.text('Saldo', startX + colWidths.codigo + colWidths.cuenta, headerYPatrimonio, { width: colWidths.saldo, align: 'right' });
+                const headerLineYPat = headerYPatrimonio + 12;
+                doc.moveTo(startX, headerLineYPat).lineTo(startX + colWidths.codigo + colWidths.cuenta + colWidths.saldo, headerLineYPat).stroke();
+                doc.y = headerLineYPat + 6;
 
                 let totalPatrimonio = 0;
                 doc.font('Helvetica');
@@ -195,12 +201,13 @@ export class BalanceGeneralPdfService {
                     if (doc.y > 700) {
                         doc.addPage();
                         doc.font('Helvetica-Bold').fontSize(9);
-                        doc.text('Código', startX, doc.y, { width: colWidths.codigo });
-                        doc.text('Cuenta', startX + colWidths.codigo, doc.y, { width: colWidths.cuenta });
-                        doc.text('Saldo', startX + colWidths.codigo + colWidths.cuenta, doc.y, { width: colWidths.saldo, align: 'right' });
-                        doc.moveDown(0.3);
-                        doc.moveTo(startX, doc.y).lineTo(startX + colWidths.codigo + colWidths.cuenta + colWidths.saldo, doc.y).stroke();
-                        doc.moveDown(0.5);
+                        const headerYPatrimonio2 = doc.y;
+                        doc.text('Código', startX, headerYPatrimonio2, { width: colWidths.codigo });
+                        doc.text('Cuenta', startX + colWidths.codigo, headerYPatrimonio2, { width: colWidths.cuenta });
+                        doc.text('Saldo', startX + colWidths.codigo + colWidths.cuenta, headerYPatrimonio2, { width: colWidths.saldo, align: 'right' });
+                        const headerLineYPat2 = headerYPatrimonio2 + 12;
+                        doc.moveTo(startX, headerLineYPat2).lineTo(startX + colWidths.codigo + colWidths.cuenta + colWidths.saldo, headerLineYPat2).stroke();
+                        doc.y = headerLineYPat2 + 6;
                         doc.font('Helvetica');
                     }
 
@@ -219,8 +226,9 @@ export class BalanceGeneralPdfService {
                 doc.moveDown(0.3);
 
                 doc.font('Helvetica-Bold');
-                doc.text('TOTAL PATRIMONIO', startX + colWidths.codigo + 50, doc.y);
-                doc.text(totalPatrimonio.toFixed(2), startX + colWidths.codigo + colWidths.cuenta, doc.y, { width: colWidths.saldo, align: 'right' });
+                const yTotalPatrimonio = doc.y; // usar Y fija para etiqueta y monto
+                doc.text('TOTAL PATRIMONIO', startX + colWidths.codigo + 50, yTotalPatrimonio);
+                doc.text(totalPatrimonio.toFixed(2), startX + colWidths.codigo + colWidths.cuenta, yTotalPatrimonio, { width: colWidths.saldo, align: 'right' });
 
                 doc.moveDown(1.5);
 
@@ -238,20 +246,25 @@ export class BalanceGeneralPdfService {
                 doc.text('VERIFICACIÓN DE ECUACIÓN CONTABLE:', startX, doc.y);
                 doc.moveDown(0.5);
 
+                // Usar tres columnas consistentes para mostrar activos / pasivos+patrimonio / diferencia
+                const totalWidth = colWidths.codigo + colWidths.cuenta + colWidths.saldo;
+                const colThird = Math.floor(totalWidth / 3);
+                const yVerify = doc.y;
+
                 doc.font('Helvetica');
                 doc.fontSize(9);
-                doc.text(`ACTIVOS = ${totalActivos.toFixed(2)}`, startX + 20, doc.y);
-                doc.text(`PASIVOS + PATRIMONIO = ${pasivoMasPatrimonio.toFixed(2)}`, startX + 200, doc.y);
-                doc.text(`DIFERENCIA = ${diferencia.toFixed(2)}`, startX + 400, doc.y);
+                doc.text(`ACTIVOS = ${totalActivos.toFixed(2)}`, startX, yVerify, { width: colThird, align: 'left' });
+                doc.text(`PASIVOS + PATRIMONIO = ${pasivoMasPatrimonio.toFixed(2)}`, startX + colThird, yVerify, { width: colThird, align: 'center' });
+                doc.text(`DIFERENCIA = ${diferencia.toFixed(2)}`, startX + colThird * 2, yVerify, { width: colThird, align: 'right' });
 
                 doc.moveDown(1);
 
                 if (cuadra) {
                     doc.fillColor('green').fontSize(10).font('Helvetica-Bold')
-                        .text('✓ LA ECUACIÓN CONTABLE CUADRA', { align: 'center' });
+                        .text(' LA ECUACIÓN CONTABLE CUADRA', { align: 'center' });
                 } else {
                     doc.fillColor('red').fontSize(10).font('Helvetica-Bold')
-                        .text('✗ LA ECUACIÓN CONTABLE NO CUADRA', { align: 'center' });
+                        .text(' LA ECUACIÓN CONTABLE NO CUADRA', { align: 'center' });
                     doc.moveDown(0.5);
                     doc.fontSize(9).fillColor('red')
                         .text(`La diferencia es de ${Math.abs(diferencia).toFixed(2)}`, { align: 'center' });

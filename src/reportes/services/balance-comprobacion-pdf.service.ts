@@ -120,19 +120,27 @@ export class BalanceComprobacionPdfService {
 
                 const yTotal = doc.y;
                 doc.font('Helvetica-Bold');
-                doc.text('TOTALES GENERALES', startX + colWidths.codigo + colWidths.cuenta, yTotal, { width: colWidths.naturaleza + colWidths.debe + colWidths.haber - 30, align: 'right' });
-                doc.text(totalDebeGeneral.toFixed(2), startX + colWidths.codigo + colWidths.cuenta + colWidths.naturaleza, yTotal, { width: colWidths.debe, align: 'right' });
-                doc.text(totalHaberGeneral.toFixed(2), startX + colWidths.codigo + colWidths.cuenta + colWidths.naturaleza + colWidths.debe, yTotal, { width: colWidths.haber, align: 'right' });
+                // Posicionar la etiqueta de totales alineada a la derecha antes de la columna 'Debe'
+                const labelX = startX;
+                const labelWidth = colWidths.codigo + colWidths.cuenta + colWidths.naturaleza;
+                doc.fillColor('black');
+                doc.text('TOTALES GENERALES', labelX, yTotal, { width: labelWidth, align: 'right' });
+
+                // Montos en sus columnas correspondientes
+                const debeX = startX + colWidths.codigo + colWidths.cuenta + colWidths.naturaleza;
+                const haberX = debeX + colWidths.debe;
+                doc.text(totalDebeGeneral.toFixed(2), debeX, yTotal, { width: colWidths.debe, align: 'right' });
+                doc.text(totalHaberGeneral.toFixed(2), haberX, yTotal, { width: colWidths.haber, align: 'right' });
 
                 doc.moveDown(1);
 
-                // 🔹 VERIFICACIÓN DE CUADRATURA
+                // 🔹 VERIFICACIÓN DE CUADRATURA    
                 const cuadra = totalDebeGeneral === totalHaberGeneral;
                 doc.fontSize(10);
                 if (cuadra) {
-                    doc.fillColor('green').text('✓ EL BALANCE CUADRA', { align: 'center' });
+                    doc.fillColor('green').text('EL BALANCE CUADRA', { align: 'center' });
                 } else {
-                    doc.fillColor('red').text('✗ EL BALANCE NO CUADRA', { align: 'center' });
+                    doc.fillColor('red').text('EL BALANCE NO CUADRA', { align: 'center' });
                     doc.moveDown(0.5);
                     doc.fontSize(9).fillColor('red').text(`Diferencia: ${Math.abs(totalDebeGeneral - totalHaberGeneral).toFixed(2)}`, { align: 'center' });
                 }

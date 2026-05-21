@@ -57,16 +57,19 @@ export class LibroMayorPdfService {
 
                     // 🧾 CABECERA TABLA
                     doc.fontSize(9);
-                    doc.text('Fecha', startX, doc.y, { width: 70 });
-                    doc.text('Asiento', startX + 70, doc.y, { width: 60 });
-                    doc.text('Concepto', startX + 130, doc.y, { width: 150 });
-                    doc.text('Debe', startX + 290, doc.y, { width: 70, align: 'right' });
-                    doc.text('Haber', startX + 360, doc.y, { width: 70, align: 'right' });
-                    doc.text('Saldo', startX + 430, doc.y, { width: 70, align: 'right' });
+                    doc.font('Helvetica-Bold');
+                    const headerY = doc.y;
+                    doc.text('Fecha', startX, headerY, { width: 70 });
+                    doc.text('Asiento', startX + 70, headerY, { width: 60 });
+                    doc.text('Concepto', startX + 130, headerY, { width: 150 });
+                    doc.text('Debe', startX + 290, headerY, { width: 70, align: 'right' });
+                    doc.text('Haber', startX + 360, headerY, { width: 70, align: 'right' });
+                    doc.text('Saldo', startX + 430, headerY, { width: 70, align: 'right' });
 
-                    doc.moveDown(0.2);
-                    doc.moveTo(startX, doc.y).lineTo(540, doc.y).stroke();
-                    doc.moveDown(0.5);
+                    const headerLineY = headerY + 12;
+                    doc.moveTo(startX, headerLineY).lineTo(540, headerLineY).stroke();
+                    doc.y = headerLineY + 6;
+                    doc.font('Helvetica');
 
                     // 🔹 MOVIMIENTOS
                     doc.font('Helvetica');
@@ -78,16 +81,17 @@ export class LibroMayorPdfService {
                             doc.addPage();
 
                             doc.font('Helvetica-Bold').fontSize(9);
-                            doc.text('Fecha', startX, doc.y, { width: 70 });
-                            doc.text('Asiento', startX + 70, doc.y, { width: 60 });
-                            doc.text('Concepto', startX + 130, doc.y, { width: 150 });
-                            doc.text('Debe', startX + 290, doc.y, { width: 70, align: 'right' });
-                            doc.text('Haber', startX + 360, doc.y, { width: 70, align: 'right' });
-                            doc.text('Saldo', startX + 430, doc.y, { width: 70, align: 'right' });
+                            const headerY2 = doc.y;
+                            doc.text('Fecha', startX, headerY2, { width: 70 });
+                            doc.text('Asiento', startX + 70, headerY2, { width: 60 });
+                            doc.text('Concepto', startX + 130, headerY2, { width: 150 });
+                            doc.text('Debe', startX + 290, headerY2, { width: 70, align: 'right' });
+                            doc.text('Haber', startX + 360, headerY2, { width: 70, align: 'right' });
+                            doc.text('Saldo', startX + 430, headerY2, { width: 70, align: 'right' });
 
-                            doc.moveDown(0.2);
-                            doc.moveTo(startX, doc.y).lineTo(540, doc.y).stroke();
-                            doc.moveDown(0.5);
+                            const headerLineY2 = headerY2 + 12;
+                            doc.moveTo(startX, headerLineY2).lineTo(540, headerLineY2).stroke();
+                            doc.y = headerLineY2 + 6;
 
                             doc.font('Helvetica');
                         }
