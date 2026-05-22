@@ -17,6 +17,14 @@ export class CarteraClientesService {
         fechaFin?: Date;
     }) {
 
+        const fechaCuentaWhere: any = {};
+        if (filtros.fechaInicio) fechaCuentaWhere.gte = filtros.fechaInicio;
+        if (filtros.fechaFin) fechaCuentaWhere.lte = filtros.fechaFin;
+
+        const fechaAbonoWhere: any = {};
+        if (filtros.fechaInicio) fechaAbonoWhere.gte = filtros.fechaInicio;
+        if (filtros.fechaFin) fechaAbonoWhere.lte = filtros.fechaFin;
+
         // 🔹 1. Traer clientes de la empresa
         const clientes = await this.prisma.cLIENTES.findMany({
             where: {
@@ -29,8 +37,11 @@ export class CarteraClientesService {
             },
             include: {
                 CUENTAS: {
+                    where: Object.keys(fechaCuentaWhere).length > 0 ? { FECHA_EMISION: fechaCuentaWhere } : undefined,
                     include: {
-                        ABONOS: true,
+                        ABONOS: {
+                            where: Object.keys(fechaAbonoWhere).length > 0 ? { FECHA_ABONO: fechaAbonoWhere } : undefined,
+                        },
                     },
                 },
             },
