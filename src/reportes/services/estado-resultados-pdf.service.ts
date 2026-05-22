@@ -69,13 +69,13 @@ export class EstadoResultadosPdfService {
                 // Cabecera
                 doc.fontSize(9);
                 doc.font('Helvetica-Bold');
-                doc.text('Código', startX, doc.y, { width: colWidths.codigo });
-                doc.text('Cuenta', startX + colWidths.codigo, doc.y, { width: colWidths.cuenta });
-                doc.text('Saldo', startX + colWidths.codigo + colWidths.cuenta, doc.y, { width: colWidths.saldo, align: 'right' });
-
-                doc.moveDown(0.3);
-                doc.moveTo(startX, doc.y).lineTo(startX + colWidths.codigo + colWidths.cuenta + colWidths.saldo, doc.y).stroke();
-                doc.moveDown(0.5);
+                const headerYIngresos = doc.y;
+                doc.text('Código', startX, headerYIngresos, { width: colWidths.codigo });
+                doc.text('Cuenta', startX + colWidths.codigo, headerYIngresos, { width: colWidths.cuenta });
+                doc.text('Saldo', startX + colWidths.codigo + colWidths.cuenta, headerYIngresos, { width: colWidths.saldo, align: 'right' });
+                const headerLineYIngresos = headerYIngresos + 12;
+                doc.moveTo(startX, headerLineYIngresos).lineTo(startX + colWidths.codigo + colWidths.cuenta + colWidths.saldo, headerLineYIngresos).stroke();
+                doc.y = headerLineYIngresos + 6;
 
                 let totalIngresos = 0;
                 doc.font('Helvetica');
@@ -89,12 +89,13 @@ export class EstadoResultadosPdfService {
                             doc.addPage();
                             // Re-dibujar cabecera
                             doc.font('Helvetica-Bold').fontSize(9);
-                            doc.text('Código', startX, doc.y, { width: colWidths.codigo });
-                            doc.text('Cuenta', startX + colWidths.codigo, doc.y, { width: colWidths.cuenta });
-                            doc.text('Saldo', startX + colWidths.codigo + colWidths.cuenta, doc.y, { width: colWidths.saldo, align: 'right' });
-                            doc.moveDown(0.3);
-                            doc.moveTo(startX, doc.y).lineTo(startX + colWidths.codigo + colWidths.cuenta + colWidths.saldo, doc.y).stroke();
-                            doc.moveDown(0.5);
+                            const headerYIngresos2 = doc.y;
+                            doc.text('Código', startX, headerYIngresos2, { width: colWidths.codigo });
+                            doc.text('Cuenta', startX + colWidths.codigo, headerYIngresos2, { width: colWidths.cuenta });
+                            doc.text('Saldo', startX + colWidths.codigo + colWidths.cuenta, headerYIngresos2, { width: colWidths.saldo, align: 'right' });
+                            const headerLineYIngresos2 = headerYIngresos2 + 12;
+                            doc.moveTo(startX, headerLineYIngresos2).lineTo(startX + colWidths.codigo + colWidths.cuenta + colWidths.saldo, headerLineYIngresos2).stroke();
+                            doc.y = headerLineYIngresos2 + 6;
                             doc.font('Helvetica');
                         }
 
@@ -109,13 +110,14 @@ export class EstadoResultadosPdfService {
                 }
 
                 // Total Ingresos
-                doc.moveDown(0.3);
-                doc.moveTo(startX, doc.y).lineTo(startX + colWidths.codigo + colWidths.cuenta + colWidths.saldo, doc.y).stroke();
-                doc.moveDown(0.3);
+                const totalLineYIngresos = doc.y + 6;
+                doc.moveTo(startX, totalLineYIngresos).lineTo(startX + colWidths.codigo + colWidths.cuenta + colWidths.saldo, totalLineYIngresos).stroke();
+                doc.y = totalLineYIngresos + 6;
 
                 doc.font('Helvetica-Bold');
-                doc.text('TOTAL INGRESOS', startX + colWidths.codigo + 100, doc.y);
-                doc.text(totalIngresos.toFixed(2), startX + colWidths.codigo + colWidths.cuenta, doc.y, { width: colWidths.saldo, align: 'right' });
+                const yTotalIngresos = doc.y;
+                doc.text('TOTAL INGRESOS', startX + colWidths.codigo + 100, yTotalIngresos);
+                doc.text(totalIngresos.toFixed(2), startX + colWidths.codigo + colWidths.cuenta, yTotalIngresos, { width: colWidths.saldo, align: 'right' });
 
                 doc.moveDown(1.5);
 
@@ -129,13 +131,13 @@ export class EstadoResultadosPdfService {
                 // Cabecera
                 doc.fontSize(9);
                 doc.font('Helvetica-Bold');
-                doc.text('Código', startX, doc.y, { width: colWidths.codigo });
-                doc.text('Cuenta', startX + colWidths.codigo, doc.y, { width: colWidths.cuenta });
-                doc.text('Saldo', startX + colWidths.codigo + colWidths.cuenta, doc.y, { width: colWidths.saldo, align: 'right' });
-
-                doc.moveDown(0.3);
-                doc.moveTo(startX, doc.y).lineTo(startX + colWidths.codigo + colWidths.cuenta + colWidths.saldo, doc.y).stroke();
-                doc.moveDown(0.5);
+                const headerYGastos = doc.y;
+                doc.text('Código', startX, headerYGastos, { width: colWidths.codigo });
+                doc.text('Cuenta', startX + colWidths.codigo, headerYGastos, { width: colWidths.cuenta });
+                doc.text('Saldo', startX + colWidths.codigo + colWidths.cuenta, headerYGastos, { width: colWidths.saldo, align: 'right' });
+                const headerLineYGastos = headerYGastos + 12;
+                doc.moveTo(startX, headerLineYGastos).lineTo(startX + colWidths.codigo + colWidths.cuenta + colWidths.saldo, headerLineYGastos).stroke();
+                doc.y = headerLineYGastos + 6;
 
                 let totalGastos = 0;
                 doc.font('Helvetica');
@@ -218,13 +220,13 @@ export class EstadoResultadosPdfService {
                     // Indicador visual
                     doc.moveDown(0.3);
                     if (margenUtilidad > 20) {
-                        doc.fillColor('green').text('✓ Margen saludable (>20%)', startX + 20, doc.y);
+                        doc.fillColor('green').text('Margen saludable (>20%)', startX + 20, doc.y);
                     } else if (margenUtilidad > 10) {
-                        doc.fillColor('orange').text('⚠ Margen moderado (10-20%)', startX + 20, doc.y);
+                        doc.fillColor('orange').text('Margen moderado (10-20%)', startX + 20, doc.y);
                     } else if (margenUtilidad > 0) {
-                        doc.fillColor('orange').text('⚠ Margen bajo (<10%)', startX + 20, doc.y);
+                        doc.fillColor('orange').text('Margen bajo (<10%)', startX + 20, doc.y);
                     } else {
-                        doc.fillColor('red').text('✗ Pérdida en el período', startX + 20, doc.y);
+                        doc.fillColor('red').text('Pérdida en el período', startX + 20, doc.y);
                     }
                     doc.fillColor('black');
                 }

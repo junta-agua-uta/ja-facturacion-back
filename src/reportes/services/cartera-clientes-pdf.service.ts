@@ -63,12 +63,13 @@ export class CarteraClientesPdfService {
 
                 // Cabecera
                 doc.font('Helvetica-Bold').fontSize(9);
-                doc.text('ID', startX, doc.y, { width: colWidths.id });
-                doc.text('Identificación', startX + colWidths.id, doc.y, { width: colWidths.identificacion });
-                doc.text('Razón Social', startX + colWidths.id + colWidths.identificacion, doc.y, { width: colWidths.razonSocial });
-                doc.text('Total Debe', startX + colWidths.id + colWidths.identificacion + colWidths.razonSocial, doc.y, { width: colWidths.totalDebe, align: 'right' });
-                doc.text('Total Abonos', startX + colWidths.id + colWidths.identificacion + colWidths.razonSocial + colWidths.totalDebe, doc.y, { width: colWidths.totalAbonos, align: 'right' });
-                doc.text('Saldo Total', startX + colWidths.id + colWidths.identificacion + colWidths.razonSocial + colWidths.totalDebe + colWidths.totalAbonos, doc.y, { width: colWidths.saldoTotal, align: 'right' });
+                const headerY = doc.y; // usar coordenada Y fija para alinear columnas
+                doc.text('ID', startX, headerY, { width: colWidths.id });
+                doc.text('Identificación', startX + colWidths.id, headerY, { width: colWidths.identificacion });
+                doc.text('Razón Social', startX + colWidths.id + colWidths.identificacion, headerY, { width: colWidths.razonSocial });
+                doc.text('Total Debe', startX + colWidths.id + colWidths.identificacion + colWidths.razonSocial, headerY, { width: colWidths.totalDebe, align: 'right' });
+                doc.text('Total Abonos', startX + colWidths.id + colWidths.identificacion + colWidths.razonSocial + colWidths.totalDebe, headerY, { width: colWidths.totalAbonos, align: 'right' });
+                doc.text('Saldo Total', startX + colWidths.id + colWidths.identificacion + colWidths.razonSocial + colWidths.totalDebe + colWidths.totalAbonos, headerY, { width: colWidths.saldoTotal, align: 'right' });
 
                 doc.moveDown(0.3);
                 doc.moveTo(startX, doc.y).lineTo(startX + colWidths.id + colWidths.identificacion + colWidths.razonSocial + colWidths.totalDebe + colWidths.totalAbonos + colWidths.saldoTotal, doc.y).stroke();
@@ -88,12 +89,13 @@ export class CarteraClientesPdfService {
                             doc.addPage();
                             // Re-dibujar cabecera
                             doc.font('Helvetica-Bold').fontSize(9);
-                            doc.text('ID', startX, doc.y, { width: colWidths.id });
-                            doc.text('Identificación', startX + colWidths.id, doc.y, { width: colWidths.identificacion });
-                            doc.text('Razón Social', startX + colWidths.id + colWidths.identificacion, doc.y, { width: colWidths.razonSocial });
-                            doc.text('Total Debe', startX + colWidths.id + colWidths.identificacion + colWidths.razonSocial, doc.y, { width: colWidths.totalDebe, align: 'right' });
-                            doc.text('Total Abonos', startX + colWidths.id + colWidths.identificacion + colWidths.razonSocial + colWidths.totalDebe, doc.y, { width: colWidths.totalAbonos, align: 'right' });
-                            doc.text('Saldo Total', startX + colWidths.id + colWidths.identificacion + colWidths.razonSocial + colWidths.totalDebe + colWidths.totalAbonos, doc.y, { width: colWidths.saldoTotal, align: 'right' });
+                            const headerY2 = doc.y;
+                            doc.text('ID', startX, headerY2, { width: colWidths.id });
+                            doc.text('Identificación', startX + colWidths.id, headerY2, { width: colWidths.identificacion });
+                            doc.text('Razón Social', startX + colWidths.id + colWidths.identificacion, headerY2, { width: colWidths.razonSocial });
+                            doc.text('Total Debe', startX + colWidths.id + colWidths.identificacion + colWidths.razonSocial, headerY2, { width: colWidths.totalDebe, align: 'right' });
+                            doc.text('Total Abonos', startX + colWidths.id + colWidths.identificacion + colWidths.razonSocial + colWidths.totalDebe, headerY2, { width: colWidths.totalAbonos, align: 'right' });
+                            doc.text('Saldo Total', startX + colWidths.id + colWidths.identificacion + colWidths.razonSocial + colWidths.totalDebe + colWidths.totalAbonos, headerY2, { width: colWidths.saldoTotal, align: 'right' });
                             doc.moveDown(0.3);
                             doc.moveTo(startX, doc.y).lineTo(startX + colWidths.id + colWidths.identificacion + colWidths.razonSocial + colWidths.totalDebe + colWidths.totalAbonos + colWidths.saldoTotal, doc.y).stroke();
                             doc.moveDown(0.5);
@@ -128,10 +130,25 @@ export class CarteraClientesPdfService {
                 doc.moveDown(0.3);
 
                 doc.font('Helvetica-Bold');
-                doc.text('TOTALES GENERALES', startX + colWidths.id + colWidths.identificacion + 20, doc.y);
-                doc.text(totalGeneralDebe.toFixed(2), startX + colWidths.id + colWidths.identificacion + colWidths.razonSocial, doc.y, { width: colWidths.totalDebe, align: 'right' });
-                doc.text(totalGeneralAbonos.toFixed(2), startX + colWidths.id + colWidths.identificacion + colWidths.razonSocial + colWidths.totalDebe, doc.y, { width: colWidths.totalAbonos, align: 'right' });
-                doc.text(totalGeneralSaldo.toFixed(2), startX + colWidths.id + colWidths.identificacion + colWidths.razonSocial + colWidths.totalDebe + colWidths.totalAbonos, doc.y, { width: colWidths.saldoTotal, align: 'right' });
+                // Calcular anchos y posiciones para alinear la etiqueta y los montos con las columnas
+                const tableWidth = colWidths.id + colWidths.identificacion + colWidths.razonSocial + colWidths.totalDebe + colWidths.totalAbonos + colWidths.saldoTotal;
+                const labelX = startX;
+                const labelWidth = colWidths.id + colWidths.identificacion + colWidths.razonSocial;
+
+                // Usar una única coordenada Y para que todos los elementos queden perfectamente alineados
+                doc.fontSize(9);
+                const yTotals = doc.y + 2; // pequeño ajuste visual hacia abajo
+                doc.fillColor('black');
+                doc.text('TOTALES GENERALES', labelX, yTotals, { width: labelWidth, align: 'center' });
+
+                // Montos alineados a la derecha en sus columnas respectivas usando la misma Y
+                const debeX = startX + colWidths.id + colWidths.identificacion + colWidths.razonSocial;
+                const abonosX = debeX + colWidths.totalDebe;
+                const saldoX = abonosX + colWidths.totalAbonos;
+
+                doc.text(totalGeneralDebe.toFixed(2), debeX, yTotals, { width: colWidths.totalDebe, align: 'right' });
+                doc.text(totalGeneralAbonos.toFixed(2), abonosX, yTotals, { width: colWidths.totalAbonos, align: 'right' });
+                doc.text(totalGeneralSaldo.toFixed(2), saldoX, yTotals, { width: colWidths.saldoTotal, align: 'right' });
 
                 doc.moveDown(1.5);
 
@@ -167,12 +184,13 @@ export class CarteraClientesPdfService {
 
                     // Cabecera de cuentas
                     doc.font('Helvetica-Bold').fontSize(8);
-                    doc.text('Cuenta ID', startX, doc.y, { width: 60 });
-                    doc.text('Fecha Emisión', startX + 60, doc.y, { width: 70 });
-                    doc.text('Valor Original', startX + 130, doc.y, { width: 70, align: 'right' });
-                    doc.text('Abonos', startX + 200, doc.y, { width: 70, align: 'right' });
-                    doc.text('Saldo', startX + 270, doc.y, { width: 70, align: 'right' });
-                    doc.text('Estado', startX + 340, doc.y, { width: 70 });
+                    const accHeaderY = doc.y;
+                    doc.text('Cuenta ID', startX, accHeaderY, { width: 60 });
+                    doc.text('Fecha Emisión', startX + 60, accHeaderY, { width: 70 });
+                    doc.text('Valor Original', startX + 130, accHeaderY, { width: 70, align: 'right' });
+                    doc.text('Abonos', startX + 200, accHeaderY, { width: 70, align: 'right' });
+                    doc.text('Saldo', startX + 270, accHeaderY, { width: 70, align: 'right' });
+                    doc.text('Estado', startX + 340, accHeaderY, { width: 70 });
 
                     doc.moveDown(0.2);
                     doc.moveTo(startX, doc.y).lineTo(startX + 410, doc.y).stroke();
@@ -188,12 +206,13 @@ export class CarteraClientesPdfService {
                                 doc.addPage();
                                 // Re-dibujar cabecera
                                 doc.font('Helvetica-Bold').fontSize(8);
-                                doc.text('Cuenta ID', startX, doc.y, { width: 60 });
-                                doc.text('Fecha Emisión', startX + 60, doc.y, { width: 70 });
-                                doc.text('Valor Original', startX + 130, doc.y, { width: 70, align: 'right' });
-                                doc.text('Abonos', startX + 200, doc.y, { width: 70, align: 'right' });
-                                doc.text('Saldo', startX + 270, doc.y, { width: 70, align: 'right' });
-                                doc.text('Estado', startX + 340, doc.y, { width: 70 });
+                                const accHeaderY2 = doc.y;
+                                doc.text('Cuenta ID', startX, accHeaderY2, { width: 60 });
+                                doc.text('Fecha Emisión', startX + 60, accHeaderY2, { width: 70 });
+                                doc.text('Valor Original', startX + 130, accHeaderY2, { width: 70, align: 'right' });
+                                doc.text('Abonos', startX + 200, accHeaderY2, { width: 70, align: 'right' });
+                                doc.text('Saldo', startX + 270, accHeaderY2, { width: 70, align: 'right' });
+                                doc.text('Estado', startX + 340, accHeaderY2, { width: 70 });
                                 doc.moveDown(0.2);
                                 doc.moveTo(startX, doc.y).lineTo(startX + 410, doc.y).stroke();
                                 doc.moveDown(0.3);

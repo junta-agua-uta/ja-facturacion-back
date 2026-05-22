@@ -92,7 +92,7 @@ export class BalanceComprobacionExcelService {
         sheet.getRow(rowIndex).values = [
             '',
             '',
-            cuadra ? '✓ CUADRADO' : '✗ NO CUADRA',
+            cuadra ? 'CUADRADO' : 'NO CUADRA',
             '',
             '',
             '',
