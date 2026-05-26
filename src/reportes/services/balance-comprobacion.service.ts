@@ -47,12 +47,29 @@ export class BalanceComprobacionService {
                     ? c.totalDebe - c.totalHaber
                     : c.totalHaber - c.totalDebe;
 
-            const saldoDeudor = saldo > 0 ? saldo : 0;
-            const saldoAcreedor = saldo < 0 ? Math.abs(saldo) : 0;
+            let saldoDeudor = 0;
+            let saldoAcreedor = 0;
 
+            if (c.naturaleza === 'DEUDORA') {
+                const saldo = c.totalDebe - c.totalHaber;
+
+                if (saldo >= 0) {
+                    saldoDeudor = saldo;
+                } else {
+                    saldoAcreedor = Math.abs(saldo);
+                }
+
+            } else if (c.naturaleza === 'ACREEDORA') {
+                const saldo = c.totalHaber - c.totalDebe;
+
+                if (saldo >= 0) {
+                    saldoAcreedor = saldo;
+                } else {
+                    saldoDeudor = Math.abs(saldo);
+                }
+            }
             totalGeneralDebe += c.totalDebe;
             totalGeneralHaber += c.totalHaber;
-
             return {
                 cuentaId: c.cuentaId,
                 codigo: c.codigo,

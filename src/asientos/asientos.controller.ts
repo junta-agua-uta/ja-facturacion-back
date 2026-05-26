@@ -192,6 +192,16 @@ export class AsientosController {
 		return this.asientosService.aprobarAsiento(id, req.user.id)
 	}
 
+	@ApiOperation({ summary: 'Desaprobar (desbloquear) un asiento contable (solo el creador)' })
+	@ApiBearerAuth('access-token')
+	@UseGuards(AuthGuard, RoleGuard)
+	@Rol('ADMIN', 'CONTADOR', 'OPERADOR')
+	@Patch(':id/desaprobar')
+	async desaprobarAsiento(@Param('id', ParseIntPipe) id: number, @Req() req: any) {
+		return this.asientosService.desaprobarAsiento(id, req.user.id)
+	}
+
+
 	@ApiOperation({ summary: 'Agrupar facturas del día en un solo asiento' })
 	@ApiBearerAuth('access-token')
 	@ApiBody({

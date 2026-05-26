@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   DefaultValuePipe,
+  Delete,
   Get,
   Param,
   ParseIntPipe,
@@ -97,5 +98,17 @@ export class PlanCuentasController {
     @Body() data: UpdatePlanCuentaDto,
   ) {
     return this.planCuentasService.editarCuenta(id, empresaId, data)
+  }
+
+  @ApiOperation({ summary: 'Eliminar una cuenta contable' })
+  @ApiQuery({ name: 'empresaId', required: false, type: Number })
+  @Rol('ADMIN', 'CONTADOR')
+  @Delete(':id')
+  async eliminarCuenta(
+    @Param('id', ParseIntPipe) id: number,
+    @Query('empresaId', new DefaultValuePipe('1'), ParseIntPipe)
+    empresaId: number,
+  ) {
+    return this.planCuentasService.eliminarCuenta(id, empresaId)
   }
 }

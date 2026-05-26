@@ -193,6 +193,105 @@ export class PlanCuentasService {
     })
   }
 
+  async eliminarCuenta(cuentaId: number, empresaId: number) {
+    const cuenta = await this.prisma.planCuentas.findUnique({
+      where: { id: cuentaId },
+      include: {
+        hijas: { where: { activo: true } },
+      },
+    })
+
+    if (!cuenta || cuenta.empresaId !== empresaId) {
+      throw new BadRequestException(
+        'La cuenta especificada no existe o no pertenece a esta empresa.',
+      )
+    }
+
+    if (cuenta.hijas.length > 0) {
+      throw new BadRequestException(
+        'No se puede eliminar la cuenta porque posee subcuentas activas.',
+      )
+    }
+
+    // Verificar si está asociada a configuraciones de asientos automáticos
+    const usoEnConfig = await this.prisma.configAsientoAuto.findFirst({
+      where: {
+        OR: [
+          { cuentaDebeId: cuentaId },
+          { cuentaHaberId: cuentaId },
+          { cuentaIvaId: cuentaId },
+        ],
+      },
+    })
+
+    if (usoEnConfig) {
+      throw new BadRequestException(
+        'No se puede eliminar la cuenta porque está asociada a la configuración de asientos automáticos.',
+      )
+    }
+
+    // Verificar si se ha usado en asientos contables
+    const usoEnAsientos = await this.prisma.detalleAsiento.findMany({
+      where: { cuentaId },
+      include: { asiento: true },
+    })
+
+    const tienePendientes = usoEnAsientos.some(
+      (det) => det.asiento?.estado === 'PENDIENTE',
+    )
+    if (tienePendientes) {
+      throw new BadRequestException(
+        'No se puede eliminar la cuenta porque posee asientos contables en estado PENDIENTE.',
+      )
+    }
+
+    const tieneAprobados = usoEnAsientos.some(
+      (det) => det.asiento?.estado === 'APROBADO',
+    )
+
+    return this.prisma.$transaction(async (tx) => {
+      let resultado: any
+
+      if (tieneAprobados) {
+        // Soft delete (desactivar)
+        resultado = await tx.planCuentas.update({
+          where: { id: cuentaId },
+          data: { activo: false },
+        })
+      } else {
+        // Hard delete
+        resultado = await tx.planCuentas.delete({
+          where: { id: cuentaId },
+        })
+      }
+
+      // Si la cuenta tiene padre, verificar si el padre se queda sin hijas activas
+      if (cuenta.padreId) {
+        const hijasActivas = await tx.planCuentas.count({
+          where: {
+            padreId: cuenta.padreId,
+            activo: true,
+            id: { not: cuentaId },
+          },
+        })
+
+        if (hijasActivas === 0) {
+          await tx.planCuentas.update({
+            where: { id: cuenta.padreId },
+            data: { esDetalle: true },
+          })
+        }
+      }
+
+      return {
+        message: tieneAprobados
+          ? 'Cuenta desactivada correctamente por poseer historial de transacciones.'
+          : 'Cuenta eliminada correctamente.',
+        cuenta: resultado,
+      }
+    })
+  }
+
   async editarCuenta(
     cuentaId: number,
     empresaId: number,
@@ -261,15 +360,13 @@ export class PlanCuentasService {
           `Inconsistencia: El código de la subcuenta (${data.codigo}) debe iniciar con el código de su cuenta padre (${padreActual.codigo}).`,
         )
       }
-
       // Si no tiene padre, nivel debe ser 1
-      if (!padreActual && data.codigo.split('.').length !== 1) {
-        throw new BadRequestException(
-          'Las cuentas raíz deben tener un código de nivel 1 (sin puntos).',
-        )
-      }
+      // if (!padreActual && data.codigo.split('.').length !== 1) {
+      //   throw new BadRequestException(
+      //     'Las cuentas raíz deben tener un código de nivel 1 (sin puntos).',
+      //   )
+      // }
     }
-
     // 4. Validar cambio de padre (si se modifica)
     if (
       data.padreId !== undefined &&

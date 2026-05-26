@@ -411,6 +411,60 @@ export class AsientosService {
 		return resultado
 	}
 
+	async desaprobarAsiento(asientoId: number, usuarioId: number) {
+		const asiento = await this.prisma.asiento.findUnique({
+			where: { id: asientoId },
+			include: { periodo: true },
+		})
+
+		if (!asiento) {
+			throw new NotFoundException('Asiento contable no encontrado.')
+		}
+
+		if (asiento.periodo.estado === 'CERRADO') {
+			throw new BadRequestException(
+				'Acción denegada: No se puede desaprobar un asiento perteneciente a un periodo contable CERRADO.',
+			)
+		}
+
+		if (asiento.estado !== 'APROBADO') {
+			throw new BadRequestException(
+				'El asiento no se encuentra en estado APROBADO.',
+			)
+		}
+
+		if (asiento.creadoPorId !== usuarioId) {
+			throw new BadRequestException(
+				'Acción denegada: Solo el usuario que creó el asiento puede desaprobarlo.',
+			)
+		}
+
+		const resultado = await this.prisma.asiento.update({
+			where: { id: asientoId },
+			data: {
+				estado: 'PENDIENTE',
+				aprobadoPorId: null,
+				fechaAprobacion: null,
+			},
+			include: {
+				periodo: true,
+				detallesAsiento: {
+					orderBy: { no: 'asc' },
+					include: { cuenta: true },
+				},
+				creadoPor: {
+					select: { ID: true, NOMBRE: true, APELLIDO: true, ROL: true },
+				},
+				aprobadoPor: {
+					select: { ID: true, NOMBRE: true, APELLIDO: true, ROL: true },
+				},
+			},
+		})
+
+		return resultado
+	}
+
+
 	/**
 	 * Aprueba múltiples asientos en lote.
 	 * Valida cada uno individualmente y retorna resumen de éxitos/fallos.
