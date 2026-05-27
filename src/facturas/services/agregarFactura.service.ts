@@ -36,7 +36,7 @@ export class AgregarFacturaService {
 
       const ivaFinal = datos.iva !== undefined && datos.iva > 0 ? datos.iva : totalIvaCalc;
       const totalGeneral = datos.valorSinImpuesto + ivaFinal;
-
+      Logger.log(`IVA de la cosa (no tengo idea de como se calcula) ${ivaFinal}`)
       // Crear la factura en la base de datos
       const nuevaFactura = await this.prisma.fACTURAS
         .create({
