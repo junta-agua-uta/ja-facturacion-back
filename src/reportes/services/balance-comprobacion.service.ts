@@ -40,6 +40,8 @@ export class BalanceComprobacionService {
 
         let totalGeneralDebe = 0;
         let totalGeneralHaber = 0;
+        let totalGeneralSaldoDeudor = 0;
+        let totalGeneralSaldoAcreedor = 0;
 
         const resultado = cuentas.map(c => {
             const saldo =
@@ -70,6 +72,8 @@ export class BalanceComprobacionService {
             }
             totalGeneralDebe += c.totalDebe;
             totalGeneralHaber += c.totalHaber;
+            totalGeneralSaldoDeudor += saldoDeudor;
+            totalGeneralSaldoAcreedor += saldoAcreedor;
             return {
                 cuentaId: c.cuentaId,
                 codigo: c.codigo,
@@ -86,6 +90,8 @@ export class BalanceComprobacionService {
             totales: {
                 totalDebe: totalGeneralDebe,
                 totalHaber: totalGeneralHaber,
+                totalSaldoDeudor: totalGeneralSaldoDeudor,
+                totalSaldoAcreedor: totalGeneralSaldoAcreedor,
             },
         };
     }

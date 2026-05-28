@@ -75,6 +75,8 @@ export class BalanceComprobacionPdfService {
                 doc.font('Helvetica');
                 let totalDebeGeneral = 0;
                 let totalHaberGeneral = 0;
+                let totalSaldoDeudorGeneral = 0;
+                let totalSaldoAcreedorGeneral = 0;
 
                 data.cuentas.forEach((cuenta) => {
                     if (doc.y > 500) {
@@ -109,6 +111,8 @@ export class BalanceComprobacionPdfService {
 
                     totalDebeGeneral += cuenta.totalDebe;
                     totalHaberGeneral += cuenta.totalHaber;
+                    totalSaldoDeudorGeneral += cuenta.saldoDeudor;
+                    totalSaldoAcreedorGeneral += cuenta.saldoAcreedor;
 
                     doc.moveDown(0.4);
                 });
@@ -129,8 +133,13 @@ export class BalanceComprobacionPdfService {
                 // Montos en sus columnas correspondientes
                 const debeX = startX + colWidths.codigo + colWidths.cuenta + colWidths.naturaleza;
                 const haberX = debeX + colWidths.debe;
+                const deudorX = haberX + colWidths.haber;
+                const acreedorX = deudorX + colWidths.saldoDeudor;
+
                 doc.text(totalDebeGeneral.toFixed(2), debeX, yTotal, { width: colWidths.debe, align: 'right' });
                 doc.text(totalHaberGeneral.toFixed(2), haberX, yTotal, { width: colWidths.haber, align: 'right' });
+                doc.text(totalSaldoDeudorGeneral.toFixed(2), deudorX, yTotal, { width: colWidths.saldoDeudor, align: 'right' });
+                doc.text(totalSaldoAcreedorGeneral.toFixed(2), acreedorX, yTotal, { width: colWidths.saldoAcreedor, align: 'right' });
 
                 doc.moveDown(1);
 

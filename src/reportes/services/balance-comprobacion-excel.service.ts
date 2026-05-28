@@ -54,6 +54,8 @@ export class BalanceComprobacionExcelService {
         // 🔹 CUENTAS
         let totalDebeGeneral = 0;
         let totalHaberGeneral = 0;
+        let totalSaldoDeudorGeneral = 0;
+        let totalSaldoAcreedorGeneral = 0;
 
         data.cuentas.forEach((cuenta) => {
             sheet.getRow(rowIndex).values = [
@@ -67,6 +69,8 @@ export class BalanceComprobacionExcelService {
 
             totalDebeGeneral += cuenta.totalDebe;
             totalHaberGeneral += cuenta.totalHaber;
+            totalSaldoDeudorGeneral += cuenta.saldoDeudor;
+            totalSaldoAcreedorGeneral += cuenta.saldoAcreedor;
 
             rowIndex++;
         });
@@ -79,8 +83,8 @@ export class BalanceComprobacionExcelService {
             'TOTALES GENERALES',
             totalDebeGeneral,
             totalHaberGeneral,
-            '',
-            '',
+            totalSaldoDeudorGeneral,
+            totalSaldoAcreedorGeneral,
         ];
 
         sheet.getRow(rowIndex).font = { bold: true };
