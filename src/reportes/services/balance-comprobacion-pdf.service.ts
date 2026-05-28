@@ -153,7 +153,47 @@ export class BalanceComprobacionPdfService {
                     doc.moveDown(0.5);
                     doc.fontSize(9).fillColor('red').text(`Diferencia: ${Math.abs(totalDebeGeneral - totalHaberGeneral).toFixed(2)}`, { align: 'center' });
                 }
+                // 🔹 FIRMAS
+                doc.fillColor('black');
+                doc.moveDown(8);
 
+                const firmaY = doc.y;
+                const firmaWidth = 200;
+
+                const responsableX = 120;
+                const contadorX = 450;
+
+                // Líneas
+                doc.moveTo(responsableX, firmaY)
+                    .lineTo(responsableX + firmaWidth, firmaY)
+                    .stroke();
+
+                doc.moveTo(contadorX, firmaY)
+                    .lineTo(contadorX + firmaWidth, firmaY)
+                    .stroke();
+
+                // Textos
+                doc.fontSize(10).font('Helvetica');
+
+                doc.text(
+                    'RESPONSABLE\nNombre: __________________',
+                    responsableX,
+                    firmaY + 15,
+                    {
+                        width: firmaWidth,
+                        align: 'center',
+                    }
+                );
+
+                doc.text(
+                    'CONTADOR\nNombre: __________________',
+                    contadorX,
+                    firmaY + 15,
+                    {
+                        width: firmaWidth,
+                        align: 'center',
+                    }
+                );
                 doc.end();
             } catch (error) {
                 reject(error);

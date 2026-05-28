@@ -12,7 +12,7 @@ async function bootstrap() {
       process.env.FRONT_ORIGIN,
       'https://juntagua--dev-ja-facturacion-front--hcqk4hv77kmd.code.run',
       'http://localhost:5173',
-      // 'https://christina-ppm-visitors-interstate.trycloudflare.com',
+      // 'https://necessarily-extension-fleece-vegas.trycloudflare.com',
     ],
     credentials: true,
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',

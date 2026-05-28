@@ -111,12 +111,12 @@ async function seedConfigAsientos(codigoToId: Record<string, number>) {
   console.log('\n⚙️  Sembrando Configuración de Asientos Automáticos...');
 
   // Mapeo de cuentas por su código
-  const CAJA              = codigoToId['1.1.01'];
-  const BANCOS            = codigoToId['1.1.02'];
-  const CXC_USUARIOS      = codigoToId['1.1.03.01'];
+  const CAJA = codigoToId['1.1.01'];
+  const BANCOS = codigoToId['1.1.02'];
+  const CXC_USUARIOS = codigoToId['1.1.03.01'];
   const IVA_VENTAS_COBRAR = codigoToId['1.1.03.02'];
-  const IVA_VENTAS_PAGAR  = codigoToId['2.1.02'];
-  const INGRESOS_AGUA     = codigoToId['4.1.01'];
+  const IVA_VENTAS_PAGAR = codigoToId['2.1.02'];
+  const INGRESOS_AGUA = codigoToId['4.1.01'];
 
   const configs = [
     {
@@ -172,9 +172,9 @@ async function seedConfigAsientos(codigoToId: Record<string, number>) {
 
 async function seedUsuariosEmpresa() {
   console.log('\n👥 Sembrando Asociación de Usuarios con Empresa...');
-  
+
   const usuarios = await prisma.uSUARIOS.findMany();
-  
+
   if (usuarios.length === 0) {
     console.log('   ⚠️ No se encontraron usuarios en la base de datos.');
     return;
@@ -199,6 +199,37 @@ async function seedUsuariosEmpresa() {
   console.log(`   ✅ Se asociaron ${usuarios.length} usuarios a la empresa ID: ${EMPRESA_ID}`);
 }
 
+async function seedClientesEmpresa() {
+  console.log('\n👤 Sembrando Asociación de Clientes con Empresa...');
+
+  const clientes = await prisma.cLIENTES.findMany();
+
+  if (clientes.length === 0) {
+    console.log('   ⚠️ No se encontraron clientes.');
+    return;
+  }
+
+  for (const cliente of clientes) {
+    await prisma.clienteEmpresa.upsert({
+      where: {
+        clienteId_empresaId: {
+          clienteId: cliente.ID,
+          empresaId: EMPRESA_ID,
+        },
+      },
+      update: {},
+      create: {
+        clienteId: cliente.ID,
+        empresaId: EMPRESA_ID,
+      },
+    });
+  }
+
+  console.log(
+    `   ✅ Se asociaron ${clientes.length} clientes a la empresa ID: ${EMPRESA_ID}`,
+  );
+}
+
 async function main() {
   console.log('\n════════════════════════════════════════════════════════');
   console.log('  SEED: MÓDULO CONTABLE - JUNTA DE AGUA POTABLE');
@@ -208,6 +239,7 @@ async function main() {
   const codigoToId = await seedPlanCuentas();
   await seedConfigAsientos(codigoToId);
   await seedUsuariosEmpresa();
+  await seedClientesEmpresa();
 
   console.log('\n════════════════════════════════════════════════════════');
   console.log('  ✅ Seed completado exitosamente.');
