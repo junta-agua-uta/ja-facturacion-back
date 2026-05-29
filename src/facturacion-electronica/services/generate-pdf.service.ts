@@ -1,6 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common'
 import PDFDocument from 'pdfkit/js/pdfkit.standalone'
 import { PdfDataDto, PdfItemDto } from '../interfaces/pdf-data.dto'
+import * as path from 'path'
+import * as fs from 'fs'
 import {
   SRIAuthorizationDto,
   SRIResponseDto,
@@ -15,6 +17,14 @@ export class GeneratePdfService {
     const buffer: Buffer[] = []
     doc.on('data', (chunk) => buffer.push(chunk as Buffer))
     doc.on('end', () => Logger.log('PDF generado exitosamente'))
+
+    // 🖼️ LOGO
+    const logoPath = path.join(process.cwd(), 'assets', 'logo_agua.png')
+    if (fs.existsSync(logoPath)) {
+      const buf = fs.readFileSync(logoPath)
+      const ab = buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength)
+      doc.image(ab, doc.page.width - 110, 20, { width: 70 })
+    }
 
     // **Encabezado ajustado con altura dinámica**
     doc
@@ -40,70 +50,62 @@ export class GeneratePdfService {
         ellipsis: true,
       })
 
+    let rightY = 100;
     doc
       .fontSize(10)
-      .text('RUC:', 320, 30)
-      .text(data.ruc, 320, 45, { width: 240, align: 'left' })
-      .text('Factura No.:', 320, 65)
-      .text(data.invoiceNumber, 320, 80, { width: 240, align: 'left' })
-      .text('Fecha Autorización:', 320, 100)
-      .text(data.dateAuthorization, 320, 115, { width: 240, align: 'left' })
-      .text('Ambiente:', 320, 135)
-      .text(data.ambiente, 320, 150, { width: 240, align: 'left' })
-      .text('Emisión:', 320, 170)
-      .text(data.emition, 320, 185, { width: 240, align: 'left' })
-      .text('Número de Autorización:', 320, 205)
-      .text(data.authorizationNumber, 320, 220, {
-        width: 240,
-        align: 'left',
-        ellipsis: true,
-      })
-      .text('Clave de Acceso:', 320, 240)
-      .text(data.accessKey, 320, 255, {
-        width: 240,
-        align: 'left',
-        ellipsis: true,
-      })
+      .text('RUC:', 320, rightY)
+      .text(data.ruc, 320, rightY + 15, { width: 240, align: 'left' })
+      .text('Factura No.:', 320, rightY + 35)
+      .text(data.invoiceNumber, 320, rightY + 50, { width: 240, align: 'left' })
+      .text('Fecha Autorización:', 320, rightY + 70)
+      .text(data.dateAuthorization, 320, rightY + 85, { width: 240, align: 'left' })
+      .text('Ambiente:', 320, rightY + 105)
+      .text(data.ambiente, 320, rightY + 120, { width: 240, align: 'left' })
+      .text('Emisión:', 320, rightY + 140)
+      .text(data.emition, 320, rightY + 155, { width: 240, align: 'left' })
+      .text('Número de Autorización:', 320, rightY + 175)
+      .text(data.authorizationNumber, 320, rightY + 190, { width: 240, align: 'left', ellipsis: true })
+      .text('Clave de Acceso:', 320, rightY + 210)
+      .text(data.accessKey, 320, rightY + 225, { width: 240, align: 'left', ellipsis: true })
 
     doc.moveDown()
 
     // **Información del cliente**
     doc
       .fontSize(10)
-      .text('Nombres:', 30, 230)
-      .text(data.clientName, 100, 230, { width: 200, ellipsis: true })
-      .text('Dirección:', 30, 245)
-      .text(data.clientAddress, 100, 245, { width: 200, ellipsis: true })
-      .text('ID:', 30, 260)
-      .text(data.clientId, 100, 260)
-      .text('Email:', 30, 275)
-      .text(data.clientEmail, 100, 275, { width: 200, ellipsis: true })
-      .text('Fecha Emisión:', 320, 280)
-      .text(data.dateEmition, 400, 280)
+      .text('Nombres:', 30, 330)
+      .text(data.clientName, 100, 330, { width: 200, ellipsis: true })
+      .text('Dirección:', 30, 345)
+      .text(data.clientAddress, 100, 345, { width: 200, ellipsis: true })
+      .text('ID:', 30, 360)
+      .text(data.clientId, 100, 360)
+      .text('Email:', 30, 375)
+      .text(data.clientEmail, 100, 375, { width: 200, ellipsis: true })
+      .text('Fecha Emisión:', 320, 380)
+      .text(data.dateEmition, 400, 380)
 
     doc.moveDown()
 
     // Línea separadora
-    doc.moveTo(30, 340).lineTo(570, 340).stroke()
+    doc.moveTo(30, 400).lineTo(570, 400).stroke()
 
     // **Tabla de detalles ajustada**
     doc
       .fontSize(10)
-      .text('Código', 30, 350)
-      .text('Descripción', 100, 350)
-      .text('Cantidad', 250, 350)
-      .text('Precio Unitario', 350, 350)
-      .text('Desc.', 450, 350)
+      .text('Código', 30, 410)
+      .text('Descripción', 100, 410)
+      .text('Cantidad', 250, 410)
+      .text('Precio Unitario', 350, 410)
+      .text('Desc.', 450, 410)
 
-    let yPosition = 370
+    let yPosition = 430
     const maxRowsPerPage = 25 // Limitar filas por página
     let rowCount = 0
 
     data.items.forEach((item: PdfItemDto) => {
-      if (rowCount === maxRowsPerPage) {
+      if (yPosition > 700) {
         doc.addPage()
         yPosition = 30 // Reiniciar posición en la nueva página
-        rowCount = 0
 
         // Reimprimir encabezados de tabla
         doc
@@ -116,18 +118,27 @@ export class GeneratePdfService {
         yPosition += 20
       }
 
-      doc
-        .text(item.code, 30, yPosition)
-        .text(item.description, 100, yPosition, {
-          width: 240,
-          align: 'left',
-          ellipsis: true,
-        })
-        .text(item.quantity.toString(), 250, yPosition)
-        .text(item.unitPrice.toFixed(2), 350, yPosition)
-        .text(item.descount.toFixed(2), 450, yPosition)
-      yPosition += 20
-      rowCount++
+      let maxY = yPosition;
+      
+      doc.text(item.code, 30, yPosition)
+      maxY = Math.max(maxY, doc.y);
+
+      doc.text(item.description, 100, yPosition, {
+        width: 140, // Reduced to prevent overlap with quantity (250 - 100 = 150)
+        align: 'left'
+      })
+      maxY = Math.max(maxY, doc.y);
+
+      doc.text(item.quantity.toString(), 250, yPosition)
+      maxY = Math.max(maxY, doc.y);
+
+      doc.text(item.unitPrice.toFixed(2), 350, yPosition)
+      maxY = Math.max(maxY, doc.y);
+
+      doc.text(item.descount.toFixed(2), 450, yPosition)
+      maxY = Math.max(maxY, doc.y);
+
+      yPosition = maxY + 5;
     })
 
     // Línea separadora
