@@ -30,7 +30,13 @@ export class BalanceComprobacionPdfService {
                 doc.fontSize(16).text(empresa?.nombre || 'Empresa', { align: 'center' });
                 doc.fontSize(10).text(`RUC: ${empresa?.ruc || '9999999999001'}`, { align: 'center' });
                 doc.moveDown(0.5);
+                const fechaActual = new Date();
 
+                const fechaFormateada = new Intl.DateTimeFormat('es-EC', {
+                    day: '2-digit',
+                    month: 'long',
+                    year: 'numeric',
+                }).format(fechaActual);
                 doc.fontSize(14).text('BALANCE DE COMPROBACIÓN', { align: 'center' });
 
                 if (filtros.fechaInicio && filtros.fechaFin) {
@@ -41,7 +47,11 @@ export class BalanceComprobacionPdfService {
                             { align: 'center' }
                         );
                 }
-
+                doc
+                    .fontSize(10)
+                    .text(`Fecha de emisión: ${fechaFormateada}`, {
+                        align: 'center',
+                    });
                 doc.moveDown(1.5);
 
                 // 🧾 CABECERA TABLA
