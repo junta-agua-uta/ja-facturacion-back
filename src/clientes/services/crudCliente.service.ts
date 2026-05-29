@@ -70,6 +70,11 @@ export class CrudClienteService {
         COBRADOR: clienteData.cobrador,
         NOMBRE_COMERCIAL: clienteData.nombreComercial,
         FECHA_CREACION: DateUtil.getCurrentDate(),
+        empresas: {
+          create: {
+            empresaId: 1, // Empresa base por defecto
+          },
+        },
       },
     })
     return clienteCreado

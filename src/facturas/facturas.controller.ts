@@ -111,9 +111,11 @@ export class FacturasController {
   })
   @Post('crear')
   async crearFactura(@Body() datosFactura: CrearFacturaDto) {
+    Logger.log(`datos de la factura ${JSON.stringify(datosFactura)}`)
     try {
       const resultado =
         await this.agregarFacturaService.agregarFactura(datosFactura)
+      Logger.log(`resultado de la factura ${JSON.stringify(resultado)}`)
       return resultado
     } catch (error) {
       throw new Error('Error al crear la factura: ' + error.message)

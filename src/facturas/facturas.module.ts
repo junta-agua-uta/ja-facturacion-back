@@ -9,9 +9,10 @@ import { ObtenerFacturaPorFechaService } from './services/obtenerFacturasPorFech
 import { GenerarExelService } from './services/generar-exel.service'
 import { AnularFacturaService } from './services/anularFactura.service'
 import { ObtenerFacturasAnuladasService } from './services/obtenerFacturasAnuladas.service'
+import { AsientosModule } from 'src/asientos/asientos.module'
 
 @Module({
-  imports: [FacturacionModule],
+  imports: [FacturacionModule, AsientosModule],
   controllers: [FacturasController],
   providers: [
     ObtenerFacturaPorIdService,

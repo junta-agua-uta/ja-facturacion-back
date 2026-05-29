@@ -1,64 +1,114 @@
 import {
-	Body,
-	Controller,
-	DefaultValuePipe,
-	Get,
-	ParseIntPipe,
-	Post,
-	Query,
+  Body,
+  Controller,
+  DefaultValuePipe,
+  Delete,
+  Get,
+  Param,
+  ParseIntPipe,
+  Post,
+  Put,
+  Query,
+  UseGuards,
 } from '@nestjs/common'
-import { ApiBody, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger'
+import {
+  ApiBearerAuth,
+  ApiBody,
+  ApiOperation,
+  ApiQuery,
+  ApiTags,
+} from '@nestjs/swagger'
 import { PlanCuentasService } from './plan-cuentas.service'
 import { CreatePlanCuentaDto } from './dtos/create-plan-cuenta.dto'
+import { UpdatePlanCuentaDto } from './dtos/update-plan-cuenta.dto'
+import { AuthGuard } from '../auth/guards/auth.guard'
+import { RoleGuard } from '../auth/guards/role.guard'
+import { Rol } from '../common/decorators/role.decorator'
 
 @ApiTags('Plan Cuentas')
+@ApiBearerAuth('access-token')
+@UseGuards(AuthGuard, RoleGuard)
 @Controller('plan-cuentas')
 export class PlanCuentasController {
-	constructor(private readonly planCuentasService: PlanCuentasService) {}
+  constructor(private readonly planCuentasService: PlanCuentasService) {}
 
-	@ApiOperation({ summary: 'Listar cuentas en formato plano o arbol' })
-	@ApiQuery({ name: 'page', required: false, type: Number })
-	@ApiQuery({ name: 'limit', required: false, type: Number })
-	@ApiQuery({
-		name: 'formato',
-		required: false,
-		enum: ['plano', 'arbol'],
-	})
-	@ApiQuery({ name: 'empresaId', required: false, type: Number })
-	@Get()
-	async listarCuentas(
-		@Query('page', new DefaultValuePipe('1'), ParseIntPipe) page: number,
-		@Query('limit', new DefaultValuePipe('10'), ParseIntPipe) limit: number,
-		@Query('formato', new DefaultValuePipe('plano')) formato: 'plano' | 'arbol',
-		@Query('empresaId', new DefaultValuePipe('1'), ParseIntPipe)
-		empresaId: number,
-	) {
-		return this.planCuentasService.listarCuentas(page, limit, formato, empresaId)
-	}
+  @ApiOperation({ summary: 'Listar cuentas en formato plano o arbol' })
+  @ApiQuery({ name: 'page', required: false, type: Number })
+  @ApiQuery({ name: 'limit', required: false, type: Number })
+  @ApiQuery({
+    name: 'formato',
+    required: false,
+    enum: ['plano', 'arbol'],
+  })
+  @ApiQuery({ name: 'empresaId', required: false, type: Number })
+  @Rol('ADMIN', 'CONTADOR', 'OPERADOR')
+  @Get()
+  async listarCuentas(
+    @Query('page', new DefaultValuePipe('1'), ParseIntPipe) page: number,
+    @Query('limit', new DefaultValuePipe('10'), ParseIntPipe) limit: number,
+    @Query('formato', new DefaultValuePipe('plano')) formato: 'plano' | 'arbol',
+    @Query('empresaId', new DefaultValuePipe('1'), ParseIntPipe)
+    empresaId: number,
+  ) {
+    return this.planCuentasService.listarCuentas(
+      page,
+      limit,
+      formato,
+      empresaId,
+    )
+  }
 
-	@ApiOperation({ summary: 'Buscar cuentas detalle por codigo o nombre' })
-	@ApiQuery({ name: 'q', required: true, type: String })
-	@ApiQuery({ name: 'empresaId', required: false, type: Number })
-	@ApiQuery({ name: 'limit', required: false, type: Number })
-	@Get('buscar')
-	async buscarCuenta(
-		@Query('q') termino: string,
-		@Query('empresaId', new DefaultValuePipe('1'), ParseIntPipe)
-		empresaId: number,
-		@Query('limit', new DefaultValuePipe('20'), ParseIntPipe) limit: number,
-	) {
-		return this.planCuentasService.buscarCuenta(termino, empresaId, limit)
-	}
+  @ApiOperation({ summary: 'Buscar cuentas detalle por codigo o nombre' })
+  @ApiQuery({ name: 'q', required: true, type: String })
+  @ApiQuery({ name: 'empresaId', required: false, type: Number })
+  @ApiQuery({ name: 'limit', required: false, type: Number })
+  @Rol('ADMIN', 'CONTADOR', 'OPERADOR')
+  @Get('buscar')
+  async buscarCuenta(
+    @Query('q') termino: string,
+    @Query('empresaId', new DefaultValuePipe('1'), ParseIntPipe)
+    empresaId: number,
+    @Query('limit', new DefaultValuePipe('20'), ParseIntPipe) limit: number,
+  ) {
+    return this.planCuentasService.buscarCuenta(termino, empresaId, limit)
+  }
 
-	@ApiOperation({ summary: 'Crear una nueva cuenta contable' })
-	@ApiQuery({ name: 'empresaId', required: false, type: Number })
-	@ApiBody({ type: CreatePlanCuentaDto })
-	@Post()
-	async crearCuenta(
-		@Query('empresaId', new DefaultValuePipe('1'), ParseIntPipe)
-		empresaId: number,
-		@Body() data: CreatePlanCuentaDto,
-	) {
-		return this.planCuentasService.crearCuenta(empresaId, data)
-	}
+  @ApiOperation({ summary: 'Crear una nueva cuenta contable' })
+  @ApiQuery({ name: 'empresaId', required: false, type: Number })
+  @ApiBody({ type: CreatePlanCuentaDto })
+  @Rol('ADMIN', 'CONTADOR')
+  @Post()
+  async crearCuenta(
+    @Query('empresaId', new DefaultValuePipe('1'), ParseIntPipe)
+    empresaId: number,
+    @Body() data: CreatePlanCuentaDto,
+  ) {
+    return this.planCuentasService.crearCuenta(empresaId, data)
+  }
+
+  @ApiOperation({ summary: 'Editar una cuenta contable existente' })
+  @ApiQuery({ name: 'empresaId', required: false, type: Number })
+  @ApiBody({ type: UpdatePlanCuentaDto })
+  @Rol('ADMIN', 'CONTADOR')
+  @Put(':id')
+  async editarCuenta(
+    @Param('id', ParseIntPipe) id: number,
+    @Query('empresaId', new DefaultValuePipe('1'), ParseIntPipe)
+    empresaId: number,
+    @Body() data: UpdatePlanCuentaDto,
+  ) {
+    return this.planCuentasService.editarCuenta(id, empresaId, data)
+  }
+
+  @ApiOperation({ summary: 'Eliminar una cuenta contable' })
+  @ApiQuery({ name: 'empresaId', required: false, type: Number })
+  @Rol('ADMIN', 'CONTADOR')
+  @Delete(':id')
+  async eliminarCuenta(
+    @Param('id', ParseIntPipe) id: number,
+    @Query('empresaId', new DefaultValuePipe('1'), ParseIntPipe)
+    empresaId: number,
+  ) {
+    return this.planCuentasService.eliminarCuenta(id, empresaId)
+  }
 }
