@@ -6,6 +6,7 @@ import { InvoiceInputDto } from 'src/facturacion-electronica/interfaces/invoice.
 import { ElectronicInvoiceService } from 'src/facturacion-electronica/services/electronic-invoice.service'
 import { TotalWithTaxDto } from 'src/facturacion-electronica/interfaces/invoice-info.dto'
 import { DateUtil } from 'src/common/utils/date.util'
+import { AsientoAutomaticoService } from 'src/asientos/asiento-automatico.service'
 
 @Injectable()
 export class AgregarFacturaService {
@@ -13,7 +14,8 @@ export class AgregarFacturaService {
     private readonly prisma: PrismaClient,
     private readonly generateInvoiceService: GenerateInvoiceService,
     private readonly electronicInvoiceService: ElectronicInvoiceService,
-  ) {}
+    private readonly asientoAutomaticoService: AsientoAutomaticoService,
+  ) { }
 
   async agregarFactura(datos: CrearFacturaDto) {
     try {
@@ -31,10 +33,10 @@ export class AgregarFacturaService {
           totalIvaCalc += (detalle.subtotal * Number(razon.IVA)) / 100;
         }
       }
-      
+
       const ivaFinal = datos.iva !== undefined && datos.iva > 0 ? datos.iva : totalIvaCalc;
       const totalGeneral = datos.valorSinImpuesto + ivaFinal;
-
+      Logger.log(`IVA de la cosa (no tengo idea de como se calcula) ${ivaFinal}`)
       // Crear la factura en la base de datos
       const nuevaFactura = await this.prisma.fACTURAS
         .create({
@@ -129,6 +131,52 @@ export class AgregarFacturaService {
             FECHA_AUTORIZACION: DateUtil.getCurrentDate(),
           },
         })
+
+        // Generar Cuenta por Cobrar si es a Crédito
+        if (datos.tipoPago === 'CREDITO') {
+          try {
+            await this.prisma.cUENTAS.create({
+              data: {
+                VALOR: totalGeneral,
+                ESTADO: 'ACTIVA',
+                ID_CLIENTE: datos.idCliente,
+              },
+            });
+            Logger.log(`Cuenta por cobrar (Deuda) generada automáticamente para la factura ID: ${facturaCreada.ID}`);
+          } catch (cuentaError) {
+            Logger.warn(`No se pudo generar la cuenta por cobrar para la factura ID: ${facturaCreada.ID}. Razón: ${cuentaError.message}`);
+          }
+        }
+
+
+        // Generar asiento contable automático para la factura autorizada
+        try {
+          const empresaId = 1; // Empresa default actual
+          const empresa = await this.prisma.empresa.findUnique({ where: { id: empresaId } });
+          
+          if (empresa?.modoAsientos === 'INDIVIDUAL') {
+            await this.asientoAutomaticoService.generarAsientoAutomatico({
+              tipoTransaccion: 'FACTURA_VENTA',
+              empresaId,
+            usuarioId: datos.idUsuario,
+            fecha: DateUtil.getCurrentDate(),
+            montoBase: datos.valorSinImpuesto,
+            montoIva: ivaFinal,
+            montoTotal: totalGeneral,
+            concepto: `Factura de Venta ${dtoFactura.infoFactura.guiaRemision} - ${facturaCreada.cliente.RAZON_SOCIAL}`,
+            referencia: dtoFactura.infoFactura.guiaRemision,
+            facturaId: facturaCreada.ID,
+          })
+          Logger.log(`Asiento contable generado para factura ID: ${facturaCreada.ID}`)
+        } else {
+          Logger.log(`Factura autorizada. Asiento NO generado por modo de agrupación: ${empresa?.modoAsientos}`);
+        }
+        } catch (asientoError) {
+          Logger.warn(
+            `No se pudo generar el asiento contable para la factura ID: ${facturaCreada.ID}. ` +
+            `Razón: ${asientoError.message}. La factura fue autorizada correctamente.`,
+          )
+        }
       }
 
       return {

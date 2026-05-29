@@ -31,7 +31,7 @@ export class LiquidacionCompraController {
     private readonly service: ElectronicLiquidacionService,
     private readonly calculationService: LiquidacionCalculationService,
     private readonly excelService: GenerarExcelLiquidacionesService,
-  ) {}
+  ) { }
 
   @Post('crear')
   @ApiOperation({
@@ -72,6 +72,7 @@ export class LiquidacionCompraController {
     this.logger.log(
       `Totales calculados: Sin impuestos: ${totales.totalSinImpuestos}, Impuestos: ${totales.totalImpuestos}, Total: ${totales.importeTotal}`,
     )
+    // this.logger.log('Detalles recibidos: ' + JSON.stringify(dto.detalles))
 
     return this.service.enviarAlSRI(
       liquidacionCompleta,
@@ -229,7 +230,7 @@ export class LiquidacionCompraController {
       )
       throw new Error(
         'Error al generar Excel de liquidaciones no anuladas: ' +
-          error.message,
+        error.message,
       )
     }
   }
