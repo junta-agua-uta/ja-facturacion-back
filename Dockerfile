@@ -52,4 +52,4 @@ EXPOSE 4000
 HEALTHCHECK --interval=20s --timeout=3s --retries=5 \
   CMD node -e "fetch('http://localhost:4000/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
 
-CMD ["sh", "-c", "npx prisma migrate deploy && node dist/main.js"]
+CMD ["sh", "-c", "npx prisma migrate deploy && node dist/src/main.js"]
