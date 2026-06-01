@@ -5,7 +5,9 @@ import {
   HttpCode,
   HttpStatus,
   Logger,
+  Patch,
   Post,
+  Put,
   Req,
   Res,
   UseGuards,
@@ -21,6 +23,8 @@ import { AuthGuard } from './guards/auth.guard'
 import { RoleGuard } from './guards/role.guard'
 import { FindUserService } from './services/findUserByCedula.service'
 import { DateUtil } from 'src/common/utils/date.util'
+import { UpdateUserService } from './services/updateUser.service'
+import { ChangePasswordDto, UpdateUserDto } from './dtos/update-user.dto'
 
 @ApiTags('Auth')
 @Controller('auth')
@@ -29,8 +33,9 @@ export class AuthController {
     private readonly register: RegisterService,
     private readonly login: LoginService,
     private readonly me: FindUserService,
+    private readonly updateUserService: UpdateUserService,
     // private readonly jwtService: JwtService,
-  ) {}
+  ) { }
 
   @ApiOperation({
     summary: 'Login',
@@ -86,5 +91,44 @@ export class AuthController {
     return Promise.resolve(
       response.status(HttpStatus.OK).json({ message: 'Hello World' }),
     )
+  }
+  /**
+   * Endpoint para que el usuario actualice sus propios datos
+   */
+  @UseGuards(AuthGuard)
+  @ApiOperation({
+    summary: 'Actualizar perfil de usuario',
+  })
+  @ApiBearerAuth('access-token')
+  @Put('profile')
+  async updateMyProfile(
+    @Req() req: Request,
+    @Body() updateData: UpdateUserDto,
+  ) {
+    const userId = (req as any).user?.id
+    if (!userId) {
+      throw new Error('Usuario no autenticado')
+    }
+    return await this.updateUserService.updateUser(userId, updateData)
+  }
+
+  /**
+   * Endpoint para cambiar contraseña
+   */
+  @UseGuards(AuthGuard)
+  @ApiOperation({
+    summary: 'Cambiar contraseña del usuario',
+  })
+  @ApiBearerAuth('access-token')
+  @Patch('change-password')
+  async changePassword(
+    @Req() req: Request,
+    @Body() changePasswordData: ChangePasswordDto,
+  ) {
+    const userId = (req as any).user?.id
+    if (!userId) {
+      throw new Error('Usuario no autenticado')
+    }
+    return this.updateUserService.changePassword(userId, changePasswordData)
   }
 }

@@ -2,6 +2,8 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
 import PDFDocument from 'pdfkit/js/pdfkit.standalone';
+import * as path from 'path';
+import * as fs from 'fs';
 
 @Injectable()
 export class EstadoResultadosPdfService {
@@ -34,6 +36,14 @@ export class EstadoResultadosPdfService {
                 doc.on('data', (chunk) => buffers.push(chunk));
                 doc.on('end', () => resolve(Buffer.concat(buffers)));
 
+                // 🖼️ LOGO
+                const logoPath = path.join(process.cwd(), 'assets', 'logo_agua.png');
+                if (fs.existsSync(logoPath)) {
+                    const buf = fs.readFileSync(logoPath);
+                    const ab = buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength);
+                    doc.image(ab, doc.page.width - 110, 20, { width: 70 });
+                }
+
                 // 🧾 ENCABEZADO
                 doc.fontSize(16).text(empresa?.nombre || 'Empresa', { align: 'center' });
                 doc.fontSize(10).text(`RUC: ${empresa?.ruc || '9999999999001'}`, { align: 'center' });
@@ -45,6 +55,9 @@ export class EstadoResultadosPdfService {
                     day: '2-digit',
                     month: 'long',
                     year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    hour12: true
                 }).format(fechaActual);
 
 
@@ -114,12 +127,20 @@ export class EstadoResultadosPdfService {
                         }
 
                         const yRow = doc.y;
+                        let maxY = yRow;
+
                         doc.text(cuenta.codigo, startX, yRow, { width: colWidths.codigo });
+                        maxY = Math.max(maxY, doc.y);
+
                         doc.text(cuenta.nombre, startX + colWidths.codigo, yRow, { width: colWidths.cuenta });
+                        maxY = Math.max(maxY, doc.y);
+
                         doc.text(cuenta.saldo.toFixed(2), startX + colWidths.codigo + colWidths.cuenta, yRow, { width: colWidths.saldo, align: 'right' });
+                        maxY = Math.max(maxY, doc.y);
 
                         totalIngresos += cuenta.saldo;
-                        doc.moveDown(0.4);
+                        doc.y = maxY;
+                        doc.moveDown(0.2);
                     });
                 }
 
@@ -174,12 +195,20 @@ export class EstadoResultadosPdfService {
                         }
 
                         const yRow = doc.y;
+                        let maxY = yRow;
+
                         doc.text(cuenta.codigo, startX, yRow, { width: colWidths.codigo });
+                        maxY = Math.max(maxY, doc.y);
+
                         doc.text(cuenta.nombre, startX + colWidths.codigo, yRow, { width: colWidths.cuenta });
+                        maxY = Math.max(maxY, doc.y);
+
                         doc.text(cuenta.saldo.toFixed(2), startX + colWidths.codigo + colWidths.cuenta, yRow, { width: colWidths.saldo, align: 'right' });
+                        maxY = Math.max(maxY, doc.y);
 
                         totalGastos += cuenta.saldo;
-                        doc.moveDown(0.4);
+                        doc.y = maxY;
+                        doc.moveDown(0.2);
                     });
                 }
 
@@ -246,13 +275,15 @@ export class EstadoResultadosPdfService {
                 }
                 // 🔹 FIRMAS
                 doc.fillColor('black');
-                doc.moveDown(8);
+                if (doc.y > doc.page.height - 150) {
+                    doc.addPage();
+                }
 
-                const firmaY = doc.y;
+                const firmaY = doc.page.height - 100;
                 const firmaWidth = 200;
 
-                const responsableX = 120;
-                const contadorX = 450;
+                const responsableX = 60;
+                const contadorX = doc.page.width - 60 - firmaWidth;
 
                 // Líneas
                 doc.moveTo(responsableX, firmaY)

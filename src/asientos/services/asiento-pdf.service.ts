@@ -1,6 +1,8 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
 import PDFDocument from 'pdfkit/js/pdfkit.standalone';
+import * as path from 'path';
+import * as fs from 'fs';
 
 @Injectable()
 export class AsientoPdfService {
@@ -33,6 +35,14 @@ export class AsientoPdfService {
         doc.on('data', (chunk) => buffers.push(chunk));
         doc.on('end', () => resolve(Buffer.concat(buffers)));
 
+        // 🖼️ LOGO
+        const logoPath = path.join(process.cwd(), 'assets', 'logo_agua.png');
+        if (fs.existsSync(logoPath)) {
+            const buf = fs.readFileSync(logoPath);
+            const ab = buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength);
+            doc.image(ab, doc.page.width - 110, 20, { width: 70 });
+        }
+
         // Encabezado
         doc.fontSize(16).text(empresa?.nombre || 'Empresa Generica', { align: 'center', bold: true });
         doc.fontSize(10).text(`RUC: ${empresa?.ruc || '9999999999001'}`, { align: 'center' });
@@ -47,7 +57,11 @@ export class AsientoPdfService {
         const startX = 40;
         let startY = doc.y;
 
-        doc.text(`Fecha: ${asiento.fecha.toISOString().split('T')[0]}`, startX, startY);
+        const fechaFormat = new Intl.DateTimeFormat('es-EC', {
+            day: '2-digit', month: '2-digit', year: 'numeric',
+            hour: '2-digit', minute: '2-digit', hour12: true
+        }).format(asiento.fecha);
+        doc.text(`Fecha: ${fechaFormat}`, startX, startY);
         doc.text(`Estado: ${asiento.estado}`, startX + 250, startY);
         startY += 15;
         doc.text(`Concepto: ${asiento.concepto}`, startX, startY, { width: 450 });
@@ -75,16 +89,28 @@ export class AsientoPdfService {
 
         asiento.detallesAsiento.forEach((detalle) => {
           const yRow = doc.y;
+          let maxY = yRow;
+
           doc.text(detalle.codcta, startX, yRow, { width: 80 });
+          maxY = Math.max(maxY, doc.y);
+
           doc.text(detalle.nombre, startX + 80, yRow, { width: 170 });
+          maxY = Math.max(maxY, doc.y);
+
           doc.text(detalle.referencia || '', startX + 260, yRow, { width: 60 });
+          maxY = Math.max(maxY, doc.y);
+
           doc.text(Number(detalle.debe).toFixed(2), startX + 330, yRow, { width: 80, align: 'right' });
+          maxY = Math.max(maxY, doc.y);
+
           doc.text(Number(detalle.haber).toFixed(2), startX + 420, yRow, { width: 80, align: 'right' });
+          maxY = Math.max(maxY, doc.y);
           
           totalDebe += Number(detalle.debe);
           totalHaber += Number(detalle.haber);
           
-          doc.moveDown(0.5);
+          doc.y = maxY;
+          doc.moveDown(0.2);
         });
 
         // Línea separadora final
@@ -101,7 +127,10 @@ export class AsientoPdfService {
         doc.moveDown(3);
 
         // Firmas
-        const yFirmas = doc.y + 40;
+        if (doc.y > doc.page.height - 150) {
+            doc.addPage();
+        }
+        const yFirmas = doc.page.height - 100;
         doc.font('Helvetica');
         doc.moveTo(startX + 50, yFirmas).lineTo(startX + 200, yFirmas).stroke();
         doc.text('Elaborado por', startX + 50, yFirmas + 5, { width: 150, align: 'center' });
@@ -154,6 +183,14 @@ export class AsientoPdfService {
         doc.on('data', (chunk) => buffers.push(chunk));
         doc.on('end', () => resolve(Buffer.concat(buffers)));
 
+        // 🖼️ LOGO
+        const logoPath = path.join(process.cwd(), 'assets', 'logo_agua.png');
+        if (fs.existsSync(logoPath)) {
+            const buf = fs.readFileSync(logoPath);
+            const ab = buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength);
+            doc.image(ab, doc.page.width - 110, 20, { width: 70 });
+        }
+
         // Encabezado global
         doc.fontSize(16).text(empresa?.nombre || 'Empresa Generica', { align: 'center', bold: true });
         doc.fontSize(10).text(`RUC: ${empresa?.ruc || '9999999999001'}`, { align: 'center' });
@@ -173,7 +210,11 @@ export class AsientoPdfService {
             if (doc.y > 700) { doc.addPage(); }
 
             doc.font('Helvetica-Bold').fontSize(10);
-            doc.text(`Fecha: ${asiento.fecha.toISOString().split('T')[0]} | Asiento No: ${asiento.numero} | Concepto: ${asiento.concepto}`, startX, doc.y, { width: 500 });
+            const fechaFormat = new Intl.DateTimeFormat('es-EC', {
+                day: '2-digit', month: '2-digit', year: 'numeric',
+                hour: '2-digit', minute: '2-digit', hour12: true
+            }).format(asiento.fecha);
+            doc.text(`Fecha: ${fechaFormat} | Asiento No: ${asiento.numero} | Concepto: ${asiento.concepto}`, startX, doc.y, { width: 500 });
             doc.moveDown(0.5);
 
             // Cabeceras tabla
@@ -206,15 +247,28 @@ export class AsientoPdfService {
                     doc.font('Helvetica').fontSize(9);
                 }
                 const yRow = doc.y;
+                let maxY = yRow;
+
                 doc.text(detalle.codcta, startX, yRow, { width: 80 });
+                maxY = Math.max(maxY, doc.y);
+
                 doc.text(detalle.nombre, startX + 80, yRow, { width: 170 });
+                maxY = Math.max(maxY, doc.y);
+
                 doc.text(detalle.referencia || '', startX + 260, yRow, { width: 60 });
+                maxY = Math.max(maxY, doc.y);
+
                 doc.text(Number(detalle.debe).toFixed(2), startX + 330, yRow, { width: 80, align: 'right' });
+                maxY = Math.max(maxY, doc.y);
+
                 doc.text(Number(detalle.haber).toFixed(2), startX + 420, yRow, { width: 80, align: 'right' });
+                maxY = Math.max(maxY, doc.y);
                 
                 sumDebe += Number(detalle.debe);
                 sumHaber += Number(detalle.haber);
-                doc.moveDown(0.5);
+
+                doc.y = maxY;
+                doc.moveDown(0.2);
             });
 
             doc.moveDown(0.2);

@@ -2,6 +2,8 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
 import PDFDocument from 'pdfkit/js/pdfkit.standalone';
+import * as path from 'path';
+import * as fs from 'fs';
 
 @Injectable()
 export class LibroMayorPdfService {
@@ -26,6 +28,14 @@ export class LibroMayorPdfService {
                 doc.on('data', (chunk) => buffers.push(chunk));
                 doc.on('end', () => resolve(Buffer.concat(buffers)));
 
+                // 🖼️ LOGO
+                const logoPath = path.join(process.cwd(), 'assets', 'logo_agua.png');
+                if (fs.existsSync(logoPath)) {
+                    const buf = fs.readFileSync(logoPath);
+                    const ab = buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength);
+                    doc.image(ab, doc.page.width - 110, 20, { width: 70 });
+                }
+
                 // 🧾 ENCABEZADO
                 doc.fontSize(16).text(empresa?.nombre || 'Empresa', { align: 'center' });
                 doc.fontSize(10).text(`RUC: ${empresa?.ruc || '9999999999001'}`, { align: 'center' });
@@ -37,6 +47,9 @@ export class LibroMayorPdfService {
                     day: '2-digit',
                     month: 'long',
                     year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    hour12: true
                 }).format(fechaActual);
 
                 doc.fontSize(14).text('LIBRO MAYOR', { align: 'center' });
@@ -110,19 +123,31 @@ export class LibroMayorPdfService {
                         }
 
                         const yRow = doc.y;
+                        let maxY = yRow;
 
                         doc.text(new Date(mov.fecha).toISOString().split('T')[0], startX, yRow, { width: 70 });
+                        maxY = Math.max(maxY, doc.y);
+                        
                         doc.text(mov.numero.toString(), startX + 70, yRow, { width: 60 });
+                        maxY = Math.max(maxY, doc.y);
+                        
                         doc.text(mov.concepto, startX + 130, yRow, { width: 150 });
+                        maxY = Math.max(maxY, doc.y);
 
                         doc.text(mov.debe.toFixed(2), startX + 290, yRow, { width: 70, align: 'right' });
+                        maxY = Math.max(maxY, doc.y);
+                        
                         doc.text(mov.haber.toFixed(2), startX + 360, yRow, { width: 70, align: 'right' });
+                        maxY = Math.max(maxY, doc.y);
+                        
                         doc.text(mov.saldo.toFixed(2), startX + 430, yRow, { width: 70, align: 'right' });
+                        maxY = Math.max(maxY, doc.y);
 
                         totalDebe += mov.debe;
                         totalHaber += mov.haber;
 
-                        doc.moveDown(0.5);
+                        doc.y = maxY;
+                        doc.moveDown(0.2);
                     });
 
                     // 🔹 TOTALES CUENTA
@@ -141,13 +166,15 @@ export class LibroMayorPdfService {
                 });
                 // 🔹 FIRMAS
                 doc.fillColor('black');
-                doc.moveDown(8);
+                if (doc.y > doc.page.height - 150) {
+                    doc.addPage();
+                }
 
-                const firmaY = doc.y;
+                const firmaY = doc.page.height - 100;
                 const firmaWidth = 200;
 
-                const responsableX = 120;
-                const contadorX = 450;
+                const responsableX = 60;
+                const contadorX = doc.page.width - 60 - firmaWidth;
 
                 // Líneas
                 doc.moveTo(responsableX, firmaY)
