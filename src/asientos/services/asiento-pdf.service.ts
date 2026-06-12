@@ -4,6 +4,14 @@ import PDFDocument from 'pdfkit/js/pdfkit.standalone';
 import * as path from 'path';
 import * as fs from 'fs';
 
+function inferTipoMovimiento(modelo?: string | null, comprobante?: string | null): string {
+  const m = (modelo || '').toLowerCase();
+  const c = (comprobante || '').toLowerCase();
+  if (m.includes('compra') || m.includes('egreso') || c.includes('compra')) return 'EGRESO';
+  if (m.includes('venta') || m.includes('ingreso') || c.includes('fact')) return 'INGRESO';
+  return 'DIARIO';
+}
+
 @Injectable()
 export class AsientoPdfService {
   constructor(private readonly prisma: PrismaClient) {}
@@ -26,6 +34,7 @@ export class AsientoPdfService {
     }
 
     const empresa = await this.prisma.empresa.findUnique({ where: { id: empresaId } });
+    const tipoMovimiento = inferTipoMovimiento(asiento.modelo, asiento.comprobante);
 
     return new Promise((resolve, reject) => {
       try {
@@ -49,7 +58,7 @@ export class AsientoPdfService {
         doc.moveDown(2);
 
         // Título
-        doc.fontSize(14).text(`COMPROBANTE DE DIARIO No. ${asiento.numero}`, { align: 'center', bold: true });
+        doc.fontSize(14).text(`COMPROBANTE DE ${tipoMovimiento} No. ${asiento.numero}`, { align: 'center', bold: true });
         doc.moveDown(1);
 
         // Datos Generales
@@ -214,7 +223,8 @@ export class AsientoPdfService {
                 day: '2-digit', month: '2-digit', year: 'numeric',
                 hour: '2-digit', minute: '2-digit', hour12: true
             }).format(asiento.fecha);
-            doc.text(`Fecha: ${fechaFormat} | Asiento No: ${asiento.numero} | Concepto: ${asiento.concepto}`, startX, doc.y, { width: 500 });
+            const tipoMov = inferTipoMovimiento(asiento.modelo, asiento.comprobante);
+            doc.text(`Fecha: ${fechaFormat} | Asiento No: ${asiento.numero} | Tipo: ${tipoMov} | Concepto: ${asiento.concepto}`, startX, doc.y, { width: 500 });
             doc.moveDown(0.5);
 
             // Cabeceras tabla
