@@ -102,6 +102,8 @@ export class CrudMedidorService {
         MODELO: medidorData.modelo,
         MARCA: medidorData.marca,
         UBICACION: medidorData.ubicacion,
+        LATITUD: medidorData.latitud,
+        LONGITUD: medidorData.longitud,
         ID_CLIENTE: medidorData.idCliente,
         FECHA_CREACION: DateUtil.getCurrentDate(),
       },
@@ -170,6 +172,8 @@ export class CrudMedidorService {
         MODELO: medidorData.modelo,
         MARCA: medidorData.marca,
         UBICACION: medidorData.ubicacion,
+        LATITUD: medidorData.latitud,
+        LONGITUD: medidorData.longitud,
         ID_CLIENTE: medidorData.idCliente,
       },
     })

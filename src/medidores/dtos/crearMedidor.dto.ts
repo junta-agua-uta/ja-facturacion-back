@@ -1,5 +1,13 @@
 // filepath: c:\Users\edder\OneDrive\Escritorio\Junta Medidores\JuntaAgua\src\medidores\dtos\crearMedidor.dto.ts
-import { IsString, IsOptional, IsNotEmpty, IsInt, Min } from 'class-validator'
+import {
+  IsString,
+  IsOptional,
+  IsNotEmpty,
+  IsInt,
+  Min,
+  IsLatitude,
+  IsLongitude,
+} from 'class-validator'
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
 
 export class CrearMedidorDto {
@@ -37,6 +45,24 @@ export class CrearMedidorDto {
   @IsOptional()
   @IsString()
   ubicacion?: string
+
+  @ApiPropertyOptional({
+    description: 'Latitud geográfica del medidor (opcional)',
+    example: -1.2543,
+    required: false,
+  })
+  @IsOptional()
+  @IsLatitude()
+  latitud?: number
+
+  @ApiPropertyOptional({
+    description: 'Longitud geográfica del medidor (opcional)',
+    example: -78.6229,
+    required: false,
+  })
+  @IsOptional()
+  @IsLongitude()
+  longitud?: number
 
   @ApiProperty({
     description: 'ID del cliente al que pertenece el medidor',
