@@ -59,3 +59,9 @@ report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 seed-mock.js
 prod_ja_facturacion-*-dump.sql
 build_log.txt
+
+# Instrucciones locales de Claude Code (no se sube al repo)
+CLAUDE.md
+
+# Datos personales reales de usuarios (nombres, coordenadas) - no subir al repo
+prisma/data/

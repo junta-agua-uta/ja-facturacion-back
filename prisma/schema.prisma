@@ -93,6 +93,8 @@ model MEDIDORES {
   MODELO           String?
   MARCA            String?
   UBICACION        String?
+  LATITUD          Float?
+  LONGITUD         Float?
   FECHA_CREACION   DateTime?          @default(now())
   ID_CLIENTE       Int
   DETALLES_MEDIDOR DETALLES_MEDIDOR[]
