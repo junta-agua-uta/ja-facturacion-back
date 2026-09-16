@@ -9,6 +9,8 @@ import {
   Delete,
   Query,
   UseGuards,
+  UsePipes,
+  ValidationPipe,
 } from '@nestjs/common'
 import {
   ApiTags,
@@ -57,6 +59,7 @@ export class MedidoresController {
     required: false,
     description: 'Número del medidor para filtrar',
   })
+  @UsePipes(new ValidationPipe({ transform: true }))
   async obtenerMedidores(@Query() query: ObtenerMedidoresDto) {
     const { page, limit, idCliente, numeroMedidor } = query
     return this.crudMedidorService.obtenerMedidores(
