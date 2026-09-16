@@ -1,5 +1,6 @@
 // filepath: c:\Users\edder\OneDrive\Escritorio\Junta Medidores\JuntaAgua\src\medidores\dtos\obtenerMedidores.dto.ts
 import { IsInt, IsOptional, Min, IsString } from 'class-validator'
+import { Type } from 'class-transformer'
 import { ApiPropertyOptional } from '@nestjs/swagger'
 
 export class ObtenerMedidoresDto {
@@ -11,6 +12,7 @@ export class ObtenerMedidoresDto {
     minimum: 1,
   })
   @IsOptional()
+  @Type(() => Number)
   @IsInt()
   @Min(1)
   page?: number
@@ -23,6 +25,7 @@ export class ObtenerMedidoresDto {
     minimum: 1,
   })
   @IsOptional()
+  @Type(() => Number)
   @IsInt()
   @Min(1)
   limit?: number
@@ -34,6 +37,7 @@ export class ObtenerMedidoresDto {
     type: Number,
   })
   @IsOptional()
+  @Type(() => Number)
   @IsInt()
   idCliente?: number
 
