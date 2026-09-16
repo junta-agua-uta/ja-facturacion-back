@@ -40,9 +40,7 @@ export class CrudMedidorService {
         skip: offset,
         take: limit,
         where,
-        orderBy: {
-          FECHA_CREACION: 'desc',
-        },
+        orderBy: [{ FECHA_CREACION: 'desc' }, { ID: 'asc' }],
         include: {
           cliente: true, // Incluye los datos del cliente relacionado
         },
