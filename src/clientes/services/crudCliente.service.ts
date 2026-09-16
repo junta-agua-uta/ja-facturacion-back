@@ -17,9 +17,7 @@ export class CrudClienteService {
       this.prisma.cLIENTES.findMany({
         skip: offset,
         take: limit,
-        orderBy: {
-          FECHA_CREACION: 'desc',
-        },
+        orderBy: [{ FECHA_CREACION: 'desc' }, { ID: 'asc' }],
       }),
       this.prisma.cLIENTES.count(),
     ])
