@@ -19,6 +19,7 @@ export class AgregarFacturaService {
 
   async agregarFactura(datos: CrearFacturaDto) {
     try {
+      let warning: string | null = null
       const maxResult = await this.prisma.fACTURAS.aggregate({
         _max: {
           SECUENCIA: true, // Reemplaza 'nombreDeLaColumna' con el nombre real de tu columna
@@ -172,6 +173,7 @@ export class AgregarFacturaService {
           Logger.log(`Factura autorizada. Asiento NO generado por modo de agrupación: ${empresa?.modoAsientos}`);
         }
         } catch (asientoError) {
+          warning = asientoError.message
           Logger.warn(
             `No se pudo generar el asiento contable para la factura ID: ${facturaCreada.ID}. ` +
             `Razón: ${asientoError.message}. La factura fue autorizada correctamente.`,
@@ -183,6 +185,7 @@ export class AgregarFacturaService {
         mensaje: response.message,
         factura: facturaCreada,
         secuencia: dtoFactura.infoFactura.guiaRemision,
+        ...(warning ? { warning } : {}),
       }
     } catch (error) {
       throw new Error(`Error al crear la factura: ${error.message}`)
@@ -256,7 +259,7 @@ export class AgregarFacturaService {
           year: 'numeric',
         }),
         dirEstablecimiento: 'Ambato',
-        obligadoContabilidad: 'NO',
+        obligadoContabilidad: 'SI', // Pedido de cambio
         tipoIdentificacionComprador,
         guiaRemision: `${facturaCreada.ID_SUCURSAL.toString().padStart(3, '0')}-${facturaCreada.sucursal.PUNTO_EMISION}-${facturaCreada.SECUENCIA.toString().padStart(9, '0')}`,
         razonSocialComprador: this.cleanString(facturaCreada.cliente.RAZON_SOCIAL),
