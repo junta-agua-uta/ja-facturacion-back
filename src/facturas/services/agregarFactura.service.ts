@@ -259,7 +259,7 @@ export class AgregarFacturaService {
           year: 'numeric',
         }),
         dirEstablecimiento: 'Ambato',
-        obligadoContabilidad: 'NO',
+        obligadoContabilidad: 'SI', // Pedido de cambio
         tipoIdentificacionComprador,
         guiaRemision: `${facturaCreada.ID_SUCURSAL.toString().padStart(3, '0')}-${facturaCreada.sucursal.PUNTO_EMISION}-${facturaCreada.SECUENCIA.toString().padStart(9, '0')}`,
         razonSocialComprador: this.cleanString(facturaCreada.cliente.RAZON_SOCIAL),
